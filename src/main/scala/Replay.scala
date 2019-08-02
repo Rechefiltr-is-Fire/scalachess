@@ -2,8 +2,6 @@ package draughts
 
 import format.pdn._
 import draughts.format.{ FEN, Forsyth, Uci }
-import scalaz.Validation.FlatMap._
-import scalaz.Validation.{ failureNel, success }
 
 case class Replay(setup: DraughtsGame, moves: List[Move], state: DraughtsGame) {
 
@@ -28,7 +26,10 @@ object Replay {
     variant: draughts.variant.Variant,
     finalSquare: Boolean
   ): Valid[Reader.Result] =
-    Some(moveStrs).filter(_.nonEmpty) toValid "[replay] pdn is empty" flatMap { nonEmptyMoves =>
+    (Some(moveStrs).filter(_.nonEmpty) match {
+      case Some(actor) => success(actor)
+      case None => failure("[replay] pdn is empty")
+    }) flatMap { nonEmptyMoves =>
       Reader.moves(
         nonEmptyMoves,
         Tags(List(
@@ -245,7 +246,7 @@ object Replay {
     variant: draughts.variant.Variant,
     atFen: String
   ): Valid[Int] =
-    if (Forsyth.<<@(variant, atFen).isEmpty) failureNel(s"Invalid FEN $atFen")
+    if (Forsyth.<<@(variant, atFen).isEmpty) draughts.failure(s"Invalid FEN $atFen")
     else {
 
       // we don't want to compare the full move number, to match transpositions
@@ -255,11 +256,11 @@ object Replay {
 
       def recursivePlyAtFen(sit: Situation, sans: List[San], ply: Int): Valid[Int] =
         sans match {
-          case Nil => failureNel(s"Can't find $atFenTruncated, reached ply $ply")
+          case Nil => draughts.failure(s"Can't find $atFenTruncated, reached ply $ply")
           case san :: rest => san(sit) flatMap { move =>
             val after = move.finalizeAfter()
             val fen = Forsyth >> DraughtsGame(Situation(after, Color.fromPly(ply)), turns = ply)
-            if (compareFen(fen)) scalaz.Success(ply)
+            if (compareFen(fen)) draughts.success(ply)
             else recursivePlyAtFen(Situation(after, !sit.color), rest, ply + 1)
           }
         }

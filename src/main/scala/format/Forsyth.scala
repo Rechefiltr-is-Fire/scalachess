@@ -105,7 +105,7 @@ object Forsyth {
           _ =>
             line.drop(1).split(',').foldLeft(ghosts) {
               (lineGhosts, field) =>
-                (field.nonEmpty && "GP".indexOf(field.charAt(0)) != -1).fold(lineGhosts + 1, lineGhosts)
+                if (field.nonEmpty && "GP".indexOf(field.charAt(0)) != -1) lineGhosts + 1 else lineGhosts
             }
         }
     }
@@ -118,7 +118,7 @@ object Forsyth {
           _ =>
             line.drop(1).split(',').foldLeft(kings) {
               (lineKings, field) =>
-                (field.nonEmpty && field.charAt(0) == 'K').fold(lineKings + 1, lineKings)
+                if (field.nonEmpty && field.charAt(0) == 'K') lineKings + 1 else lineKings
             }
         }
     }

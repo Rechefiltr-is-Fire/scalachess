@@ -99,9 +99,9 @@ object Color {
   def exists(name: String) = all exists (_.name == name)
 
   def showResult(color: Option[Color], draughtsResult: Boolean) = color match {
-    case Some(White) => draughtsResult.fold("2-0", "1-0")
-    case Some(Black) => draughtsResult.fold("0-2", "0-1")
-    case None => draughtsResult.fold("1-1", "1/2-1/2")
+    case Some(White) => if (draughtsResult) "2-0" else "1-0"
+    case Some(Black) => if (draughtsResult) "0-2" else "0-1"
+    case None => if (draughtsResult) "1-1" else "1/2-1/2"
   }
 
   def fromResult(result: String): Option[Color] = result match {

@@ -1,8 +1,6 @@
 package draughts
 package format.pdn
 
-import scalaz.Validation.{ success, failure }
-
 object Reader {
 
   sealed trait Result {

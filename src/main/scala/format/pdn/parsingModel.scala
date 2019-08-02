@@ -58,8 +58,8 @@ case class Std(
         else m
       case (m, _) => m
     } match {
-      case None => s"No move found ($iteratedCapts): $this - in situation $situation".failureNel
-      case Some(move) => Some(move) toValid s"Invalide move: $move"
+      case None => draughts.failure(s"No move found ($iteratedCapts): $this - in situation $situation")
+      case Some(move) => draughts.success(move)
     }
 
   private def compare[A](a: Option[A], b: A) = a.fold(true)(b ==)

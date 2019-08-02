@@ -2,7 +2,6 @@ package draughts
 package variant
 
 import scala.collection.breakOut
-import scalaz.Validation.FlatMap._
 
 import Pos.posAt
 
@@ -106,11 +105,20 @@ abstract class Variant(
     def findMove(from: Pos, to: Pos) = validMovesFrom(situation, from, finalSquare).find(m => m.dest == to && captures.fold(true)(m.capture.contains) && !forbiddenUci.fold(false)(_.contains(m.toUci.uci)))
 
     for {
-      actor ← situation.board.actors get from toValid "No piece on " + from
-      myActor ← actor.validIf(actor is situation.color, "Not my piece on " + from)
-      m1 ← findMove(from, to) toValid "Piece on " + from + " cannot move to " + to
-      m2 ← m1 withPromotion promotion toValid "Piece on " + from + " cannot promote to " + promotion
-      m3 <- m2 validIf (isValidPromotion(promotion), "Cannot promote to " + promotion + " in this game mode")
+      actor ← ((situation.board.actors get from) match {
+        case Some(actor) => success(actor)
+        case None => failure("No piece on " + from)
+      })
+      myActor ← (if (actor is situation.color) success(actor) else failure("Not my piece on " + from))
+      m1 ← ((findMove(from, to)) match {
+        case Some(m1) => success(m1)
+        case None => failure("Piece on " + from + " cannot move to " + to)
+      })
+      m2 ← ((m1 withPromotion promotion) match {
+        case Some(m2) => success(m2)
+        case None => failure("Piece on " + from + " cannot promote to " + promotion)
+      })
+      m3 <- (if (isValidPromotion(promotion)) success(m2) else failure("Cannot promote to " + promotion + " in this game mode"))
     } yield m3
 
   }

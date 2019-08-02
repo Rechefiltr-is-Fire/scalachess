@@ -31,7 +31,7 @@ case class Situation(board: Board, color: Color) {
 
   private def calculateAmbiguitiesFrom(pos: Pos, moves: List[Move]) =
     moves.foldLeft(0) {
-      (ambs, m1) => ambs + moves.exists(m2 => m1.capture.fold(None: Option[Pos])(_.headOption) == m2.capture.fold(None: Option[Pos])(_.headOption) && m1.situationAfter.board.pieces != m2.situationAfter.board.pieces).fold(1, 0)
+      (ambs, m1) => ambs + (if (moves.exists(m2 => m1.capture.fold(None: Option[Pos])(_.headOption) == m2.capture.fold(None: Option[Pos])(_.headOption) && m1.situationAfter.board.pieces != m2.situationAfter.board.pieces)) 1 else 0)
     }
 
   def movesFrom(pos: Pos, finalSquare: Boolean = false): List[Move] = board.variant.validMovesFrom(this, pos, finalSquare)

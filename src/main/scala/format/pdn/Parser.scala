@@ -3,15 +3,12 @@ package format.pdn
 
 import variant.Variant
 
-import scala.util.parsing.combinator._
-import scalaz.Validation.FlatMap._
-import scalaz.Validation.{ success => succezz }
-
 import scala.collection.breakOut
+import scala.util.parsing.combinator._
 
 // http://www.saremba.de/chessgml/standards/pdn/pgn-complete.htm
 // https://pdn.fmjd.org/index.html
-object Parser extends scalaz.syntax.ToTraverseOps {
+object Parser {
 
   case class StrMove(
       san: String,
@@ -65,7 +62,10 @@ object Parser extends scalaz.syntax.ToTraverseOps {
           } mergeGlyphs glyphs
         }
       ): Valid[San]
-    }.sequence map Sans.apply
+    }.foldRight(Success(Sans.empty): Valid[Sans]) {
+      case (el: Valid[San], acc: Valid[Sans]) =>
+        acc.flatMap(sans => el.map((s: San) => Sans(s :: sans.value)))
+    }
 
   trait Logging { self: Parsers =>
     protected val loggingEnabled = false
@@ -82,9 +82,9 @@ object Parser extends scalaz.syntax.ToTraverseOps {
     def apply(pdn: String): Valid[(InitialPosition, List[StrMove], Option[Tag])] =
       parseAll(strMoves, pdn) match {
         case Success((init, moves, result), _) =>
-          succezz(init, moves, result map { r => Tag(_.Result, r) })
+          draughts.success(init, moves, result map { r => Tag(_.Result, r) })
         case err =>
-          "Cannot parse moves: %s\n%s".format(err.toString, pdn).failureNel
+          draughts.failure("Cannot parse moves: %s\n%s".format(err.toString, pdn))
       }
 
     def strMoves: Parser[(InitialPosition, List[StrMove], Option[String])] = as("moves") {
@@ -160,7 +160,7 @@ object Parser extends scalaz.syntax.ToTraverseOps {
                 case Success(glphs, _) => glphs
                 case err => Glyphs.empty
               }
-              succezz(Std(
+              draughts.success(Std(
                 src = srcP,
                 dest = dstP,
                 capture = cptR == "x",
@@ -171,10 +171,10 @@ object Parser extends scalaz.syntax.ToTraverseOps {
                   variations = Nil
                 )
               ))
-            case _ => s"Cannot parse fields: $srcR($cptR)$dstR".failureNel
+            case _ => draughts.failure(s"Cannot parse fields: $srcR($cptR)$dstR")
           }
         }
-        case _ => s"Cannot parse move: $str".failureNel
+        case _ => draughts.failure(s"Cannot parse move: $str")
       }
     }
 
@@ -200,9 +200,9 @@ object Parser extends scalaz.syntax.ToTraverseOps {
   object TagParser extends RegexParsers with Logging {
 
     def apply(pdn: String): Valid[Tags] = parseAll(all, pdn) match {
-      case f: Failure => "Cannot parse tags: %s\n%s".format(f.toString, pdn).failureNel
-      case Success(tags, _) => succezz(Tags(tags))
-      case err => "Cannot parse tags: %s\n%s".format(err.toString, pdn).failureNel
+      case f: Failure => draughts.failure("Cannot parse tags: %s\n%s".format(f.toString, pdn))
+      case Success(tags, _) => draughts.success(Tags(tags))
+      case err => draughts.failure("Cannot parse tags: %s\n%s".format(err.toString, pdn))
     }
 
     def fromFullPdn(pdn: String): Valid[Tags] =
@@ -242,8 +242,8 @@ object Parser extends scalaz.syntax.ToTraverseOps {
       line lift 0 contains '['
     } match {
       case (tagLines, moveLines) => //Drop any tag in last line (accomodate [FILENAME)
-        if (moveLines.lastOption.fold(false)(line => line.nonEmpty && line.head == '[' && line.last == ']')) succezz(tagLines.mkString("\n") -> moveLines.dropRight(1).mkString("\n"))
-        else succezz(tagLines.mkString("\n") -> moveLines.mkString("\n"))
+        if (moveLines.lastOption.fold(false)(line => line.nonEmpty && line.head == '[' && line.last == ']')) draughts.success(tagLines.mkString("\n") -> moveLines.dropRight(1).mkString("\n"))
+        else draughts.success(tagLines.mkString("\n") -> moveLines.mkString("\n"))
     }
 
 }

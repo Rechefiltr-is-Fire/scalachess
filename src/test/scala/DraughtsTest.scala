@@ -4,8 +4,6 @@ import draughts.format.Forsyth
 import draughts.variant.Variant
 import org.specs2.matcher.{ Matcher, ValidationMatchers }
 import org.specs2.mutable.Specification
-import scalaz.{ Validation => V }
-import V.FlatMap._
 
 trait DraughtsTest extends Specification with ValidationMatchers {
 

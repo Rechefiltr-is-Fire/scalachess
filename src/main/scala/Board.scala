@@ -3,8 +3,6 @@ package draughts
 import Pos.posAt
 
 import scala.collection.breakOut
-import scalaz.Validation.FlatMap._
-import scalaz.Validation.{ failureNel, success }
 import variant.Variant
 
 case class Board(
@@ -12,8 +10,6 @@ case class Board(
     history: DraughtsHistory,
     variant: Variant
 ) {
-
-  import implicitFailures._
 
   def apply(at: Pos): Option[Piece] = pieces get at
 
@@ -61,7 +57,7 @@ case class Board(
 
   def place(piece: Piece) = new {
     def at(at: Pos): Valid[Board] =
-      if (pieces contains at) failureNel("Cannot place at occupied " + at)
+      if (pieces contains at) draughts.failure("Cannot place at occupied " + at)
       else success(copy(pieces = pieces + ((at, piece))))
   }
 
@@ -74,7 +70,7 @@ case class Board(
   }
 
   def withoutGhosts = copy(
-    pieces = pieces.filterValues(!_.isGhost)
+    pieces = pieces.filter(p => !p._2.isGhost)
   )
 
   def move(orig: Pos, dest: Pos): Option[Board] =
@@ -91,10 +87,13 @@ case class Board(
 
   def move(orig: Pos) = new {
     def to(dest: Pos): Valid[Board] = {
-      if (pieces contains dest) failureNel("Cannot move to occupied " + dest)
+      if (pieces contains dest) draughts.failure("Cannot move to occupied " + dest)
       else pieces get orig map { piece =>
         copy(pieces = pieces - orig + (dest -> piece))
-      } toSuccess ("No piece at " + orig + " to move")
+      } match {
+        case Some(v) => draughts.success(v)
+        case _ => draughts.failure("No piece at " + orig + " to move")
+      }
     }
   }
 
