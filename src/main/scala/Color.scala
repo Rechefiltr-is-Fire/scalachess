@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 sealed trait Color {
 
@@ -8,22 +8,18 @@ sealed trait Color {
 
   val unary_! : Color
 
-  val passablePawnY: Int
-  val promotablePawnY: Int
+  val promotableManY: Int
   val backrankY: Int
 
   val letter: Char
   val name: String
 
-  def pawn = this - Pawn
-  def bishop = this - Bishop
-  def knight = this - Knight
-  def rook = this - Rook
-  def queen = this - Queen
+  def man = this - Man
   def king = this - King
 
   val white = this == Color.White
   val black = this == Color.Black
+
 }
 
 object Color {
@@ -57,11 +53,10 @@ object Color {
 
     lazy val unary_! = Black
 
-    val passablePawnY = 5
-    val promotablePawnY = 8
-    val backrankY = 1
+    val promotableManY = 1
+    val backrankY = 10
 
-    val letter = 'w'
+    val letter = 'W'
     val name = "white"
 
     override val hashCode = 1
@@ -71,11 +66,10 @@ object Color {
 
     val unary_! = White
 
-    val passablePawnY = 4
-    val promotablePawnY = 1
-    val backrankY = 8
+    val promotableManY = 10
+    val backrankY = 1
 
-    val letter = 'b'
+    val letter = 'B'
     val name = "black"
 
     override val hashCode = 2
@@ -91,8 +85,8 @@ object Color {
     else None
 
   def apply(c: Char): Option[Color] =
-    if (c == 'w') Some(White)
-    else if (c == 'b') Some(Black)
+    if (c == 'W' || c == 'w') Some(White)
+    else if (c == 'B' || c == 'b') Some(Black)
     else None
 
   val white: Color = White
@@ -104,15 +98,17 @@ object Color {
 
   def exists(name: String) = all exists (_.name == name)
 
-  def showResult(color: Option[Color]) = color match {
-    case Some(chess.White) => "1-0"
-    case Some(chess.Black) => "0-1"
-    case None => "1/2-1/2"
+  def showResult(color: Option[Color], draughtsResult: Boolean) = color match {
+    case Some(White) => draughtsResult.fold("2-0", "1-0")
+    case Some(Black) => draughtsResult.fold("0-2", "0-1")
+    case None => draughtsResult.fold("1-1", "1/2-1/2")
   }
 
   def fromResult(result: String): Option[Color] = result match {
-    case "1-0" => Some(chess.White)
-    case "0-1" => Some(chess.Black)
+    case "1-0" => Some(White)
+    case "2-0" => Some(White)
+    case "0-1" => Some(Black)
+    case "0-2" => Some(Black)
     case _ => None
   }
 }

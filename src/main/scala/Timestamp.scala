@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 case class Timestamp(value: Long)
   extends AnyVal with Ordered[Timestamp] {
@@ -7,7 +7,7 @@ case class Timestamp(value: Long)
 
   def +(o: Centis) = Timestamp(value + o.millis)
 
-  def compare(other: Timestamp) = java.lang.Long.compare(value, other.value)
+  def compare(other: Timestamp) = value compare other.value
 }
 
 trait Timestamper {
@@ -16,6 +16,6 @@ trait Timestamper {
   def toNow(ts: Timestamp) = now - ts
 }
 
-private[chess] object RealTimestamper extends Timestamper {
+private[draughts] object RealTimestamper extends Timestamper {
   def now = new Timestamp(System.currentTimeMillis)
 }

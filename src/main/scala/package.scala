@@ -2,7 +2,7 @@ import ornicar.scalalib
 
 import scala.util.Try
 
-package object chess
+package object draughts
 
   extends scalalib.Validation
   with scalalib.Common
@@ -24,14 +24,12 @@ package object chess
   val White = Color.White
   val Black = Color.Black
 
-  type Direction = Pos => Option[Pos]
+  type Direction = (Int, Pos => Option[Pos])
   type Directions = List[Direction]
 
   type PieceMap = Map[Pos, Piece]
 
   type PositionHash = Array[Byte]
-
-  type MoveOrDrop = Either[Move, Drop]
 
   object implicitFailures {
     implicit def stringToFailures(str: String): Failures = scalaz.NonEmptyList(str)
@@ -39,4 +37,5 @@ package object chess
 
   def parseIntOption(str: String): Option[Int] =
     Try(Integer.parseInt(str)).toOption
+
 }

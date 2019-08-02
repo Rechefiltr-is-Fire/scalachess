@@ -1,94 +1,39 @@
-package chess
-
-import Pos.posAt
+package draughts
 
 sealed trait Role {
   val forsyth: Char
-  lazy val forsythUpper: Char = forsyth.toUpper
-  lazy val pgn: Char = forsythUpper
-  lazy val name = toString.toLowerCase
-  val projection: Boolean
-  val dirs: Directions
-  def dir(from: Pos, to: Pos): Option[Direction]
+  lazy val pdn: Char = forsyth
+  lazy val name: String = toString.toLowerCase
 }
+
 sealed trait PromotableRole extends Role
 
-/**
- * Promotable in antichess.
- */
 case object King extends PromotableRole {
-  val forsyth = 'k'
-  val dirs: Directions = Queen.dirs
-  def dir(from: Pos, to: Pos) = None
-  val projection = false
+  val forsyth = 'K'
 }
 
-case object Queen extends PromotableRole {
-  val forsyth = 'q'
-  val dirs: Directions = Rook.dirs ::: Bishop.dirs
-  def dir(from: Pos, to: Pos) = Rook.dir(from, to) orElse Bishop.dir(from, to)
-  val projection = true
+case object Man extends Role {
+  val forsyth = ' '
 }
-case object Rook extends PromotableRole {
-  val forsyth = 'r'
-  val dirs: Directions = List(_.up, _.down, _.left, _.right)
-  def dir(from: Pos, to: Pos) = if (to ?| from) Some(
-    if (to ?^ from) (_.up) else (_.down)
-  )
-  else if (to ?- from) Some(
-    if (to ?< from) (_.left) else (_.right)
-  )
-  else None
-  val projection = true
+
+case object GhostMan extends Role {
+  val forsyth = 'G'
 }
-case object Bishop extends PromotableRole {
-  val forsyth = 'b'
-  val dirs: Directions = List(_.upLeft, _.upRight, _.downLeft, _.downRight)
-  def dir(from: Pos, to: Pos) = if (to onSameDiagonal from) Some(
-    if (to ?^ from) {
-      if (to ?< from) (_.upLeft) else (_.upRight)
-    } else {
-      if (to ?< from) (_.downLeft) else (_.downRight)
-    }
-  )
-  else None
-  val projection = true
-}
-case object Knight extends PromotableRole {
-  val forsyth = 'n'
-  val dirs: Directions = List(
-    p => posAt(p.x - 1, p.y + 2),
-    p => posAt(p.x - 1, p.y - 2),
-    p => posAt(p.x + 1, p.y + 2),
-    p => posAt(p.x + 1, p.y - 2),
-    p => posAt(p.x - 2, p.y + 1),
-    p => posAt(p.x - 2, p.y - 1),
-    p => posAt(p.x + 2, p.y + 1),
-    p => posAt(p.x + 2, p.y - 1)
-  )
-  def dir(from: Pos, to: Pos) = None
-  val projection = false
-}
-case object Pawn extends Role {
-  val forsyth = 'p'
-  val dirs: Directions = Nil
-  def dir(from: Pos, to: Pos) = None
-  val projection = false
+
+case object GhostKing extends Role {
+  val forsyth = 'P'
 }
 
 object Role {
 
-  val all: List[Role] = List(King, Queen, Rook, Bishop, Knight, Pawn)
-  val allPromotable: List[PromotableRole] = List(Queen, Rook, Bishop, Knight, King)
-  val allByForsyth: Map[Char, Role] = all map { r => (r.forsyth, r) } toMap
-  val allByPgn: Map[Char, Role] = all map { r => (r.pgn, r) } toMap
-  val allByName: Map[String, Role] = all map { r => (r.name, r) } toMap
-  val allPromotableByName: Map[String, PromotableRole] =
-    allPromotable map { r => (r.toString, r) } toMap
-  val allPromotableByForsyth: Map[Char, PromotableRole] =
-    allPromotable map { r => (r.forsyth, r) } toMap
-  val allPromotableByPgn: Map[Char, PromotableRole] =
-    allPromotable map { r => (r.pgn, r) } toMap
+  val all: List[Role] = List(King, Man)
+  val allPromotable: List[PromotableRole] = List(King)
+
+  val allByForsyth: Map[Char, Role] = all.map(r => (r.forsyth, r)).toMap
+  val allByPdn: Map[Char, Role] = all.map(r => (r.pdn, r)).toMap
+  val allByName: Map[String, Role] = all.map(r => (r.name, r))toMap
+  val allPromotableByName: Map[String, PromotableRole] = allPromotable.map(r => (r.toString, r))toMap
+  val allPromotableByForsyth: Map[Char, PromotableRole] = allPromotable.map(r => (r.forsyth, r))toMap
 
   def forsyth(c: Char): Option[Role] = allByForsyth get c
 
@@ -102,11 +47,9 @@ object Role {
     name flatMap promotable
 
   def valueOf(r: Role): Option[Int] = r match {
-    case Pawn => Some(1)
-    case Knight => Some(3)
-    case Bishop => Some(3)
-    case Rook => Some(5)
-    case Queen => Some(9)
-    case King => None
+    case Man => Some(1)
+    case King => Some(2)
+    case _ => Some(0)
   }
+
 }

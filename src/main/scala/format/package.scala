@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 package object format {
 

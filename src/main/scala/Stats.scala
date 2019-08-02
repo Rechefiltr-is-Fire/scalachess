@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 // Welford's numerically stable online variance.
 //

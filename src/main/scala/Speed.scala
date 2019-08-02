@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 sealed abstract class Speed(
     val id: Int,

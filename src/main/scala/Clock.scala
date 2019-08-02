@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 import java.text.DecimalFormat
 
@@ -33,6 +33,7 @@ case class Clock(
   def isRunning = timer.isDefined
 
   def start = if (isRunning) this else copy(timer = Some(now))
+  def restart = copy(timer = timer.map(_ => now))
 
   def stop = timer.fold(this) { t =>
     copy(
@@ -82,10 +83,14 @@ case class Clock(
   // To do: safely add this to takeback to remove inc from player.
   // def deinc = updatePlayer(color, _.giveTime(-incrementOf(color)))
 
-  def takeback = switch
+  def takeback = copy(color = !color)
 
   def giveTime(c: Color, t: Centis) = updatePlayer(c) {
     _.giveTime(t)
+  }
+
+  def takeTime(c: Color, t: Centis) = updatePlayer(c) {
+    _.takeTime(t)
   }
 
   def setRemainingTime(c: Color, centis: Centis) = updatePlayer(c) {
@@ -156,7 +161,7 @@ object Clock {
 
     def emergSeconds = math.min(60, math.max(10, limitSeconds / 8))
 
-    def estimateTotalSeconds = limitSeconds + 40 * incrementSeconds
+    def estimateTotalSeconds = limitSeconds + 50 * incrementSeconds
 
     def estimateTotalTime = Centis.ofSeconds(estimateTotalSeconds)
 
@@ -170,8 +175,8 @@ object Clock {
 
     def toClock = Clock(this)
 
-    def limitString: String = limitSeconds match {
-      case l if l % 60 == 0 => (l / 60).toString
+    def limitString = limitSeconds match {
+      case l if l % 60 == 0 => l / 60
       case 15 => "¼"
       case 30 => "½"
       case 45 => "¾"
@@ -184,7 +189,7 @@ object Clock {
     override def toString = s"$limitString+$incrementSeconds"
 
     def berserkPenalty =
-      if (limitSeconds < 40 * incrementSeconds) Centis(0)
+      if (limitSeconds < 50 * incrementSeconds) Centis(0)
       else Centis(limitSeconds * (100 / 2))
 
     def initTime = {
@@ -194,7 +199,7 @@ object Clock {
   }
 
   // [TimeControl "600+2"] -> 10+2
-  def readPgnConfig(str: String): Option[Config] = str.split('+') match {
+  def readPdnConfig(str: String): Option[Config] = str.split('+') match {
     case Array(initStr, incStr) => for {
       init <- parseIntOption(initStr)
       inc <- parseIntOption(incStr)

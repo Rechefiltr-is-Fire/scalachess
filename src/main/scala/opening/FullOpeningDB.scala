@@ -1,4 +1,4 @@
-package chess
+package draughts
 package opening
 
 import format.FEN
@@ -18,10 +18,10 @@ object FullOpeningDB {
 
   // assumes standard initial FEN and variant
   def search(moveStrs: Traversable[String]): Option[FullOpening.AtPly] =
-    chess.Replay.boards(moveStrs take SEARCH_MAX_PLIES, None, variant.Standard).toOption.flatMap {
+    draughts.Replay.boards(moveStrs take SEARCH_MAX_PLIES, None, variant.Standard).toOption.flatMap {
       _.zipWithIndex.drop(1).foldRight(none[FullOpening.AtPly]) {
         case ((board, ply), None) =>
-          val fen = format.Forsyth.exportStandardPositionTurnCastling(board, ply)
+          val fen = format.Forsyth.exportStandardPositionTurn(board, ply)
           byFen get fen map (_ atPly ply)
         case (_, found) => found
       }

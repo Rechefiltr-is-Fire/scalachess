@@ -1,8 +1,8 @@
-name := "scalachess"
+name := "scaladraughts"
 
-organization := "org.lichess"
+organization := "org.lidraughts"
 
-version := "8.6.22"
+version := "1.0.0"
 
 scalaVersion := "2.12.6"
 crossScalaVersions := Seq("2.11.12", "2.12.6")

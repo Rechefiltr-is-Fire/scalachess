@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 final case class LagTracker(
     quotaGain: Centis,

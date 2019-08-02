@@ -1,4 +1,4 @@
-package chess
+package draughts
 package opening
 
 final class Ecopening(
@@ -43,8 +43,8 @@ object Ecopening {
       })
     }
 
-  def fromGame(pgnMoves: List[String]): Option[Ecopening] = Replay.boards(
-    moveStrs = pgnMoves take EcopeningDB.MAX_MOVES,
+  def fromGame(pdnmoves: List[String]): Option[Ecopening] = Replay.boards(
+    moveStrs = pdnmoves take EcopeningDB.MAX_MOVES,
     initialFen = none,
     variant = variant.Standard
   ).toOption flatMap matchChronoBoards

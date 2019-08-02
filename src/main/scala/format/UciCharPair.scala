@@ -1,10 +1,9 @@
-package chess
+package draughts
 package format
 
 import scala.collection.breakOut
 
 case class UciCharPair(a: Char, b: Char) {
-
   override def toString = s"$a$b"
 }
 
@@ -12,14 +11,11 @@ object UciCharPair {
 
   import implementation._
 
-  def apply(uci: Uci): UciCharPair = uci match {
-    case Uci.Move(orig, dest, None) => UciCharPair(toChar(orig), toChar(dest))
-    case Uci.Move(orig, dest, Some(role)) => UciCharPair(toChar(orig), toChar(dest.x, role))
-    case Uci.Drop(role, pos) => UciCharPair(
-      toChar(pos),
-      dropRole2charMap.getOrElse(role, voidChar)
-    )
-  }
+  def apply(uci: Uci): UciCharPair = UciCharPair(toChar(uci.origDest._1), toChar(uci.origDest._2))
+  def apply(uci: Uci, ambiguity: Int): UciCharPair = UciCharPair(toChar(uci.origDest._1), ambiguity2charMap.getOrElse(ambiguity, voidChar))
+  def apply(orig: Char, ambiguity: Int): UciCharPair = UciCharPair(orig, ambiguity2charMap.getOrElse(ambiguity, voidChar))
+
+  def combine(uci1: Uci, uci2: Uci): UciCharPair = UciCharPair(toChar(uci1.origDest._1), toChar(uci2.origDest._2))
 
   private[format] object implementation {
 
@@ -34,17 +30,12 @@ object UciCharPair {
 
     def toChar(pos: Pos) = pos2charMap.getOrElse(pos, voidChar)
 
-    val promotion2charMap: Map[(File, PromotableRole), Char] = (for {
-      (role, index) <- Role.allPromotable.zipWithIndex
-      file <- 1 to 8
-    } yield (file, role) -> (charShift + pos2charMap.size + index * 8 + (file - 1)).toChar)(breakOut)
+    /**
+     * Allow for 50 ambiguities per destination, should be enough
+     */
+    val ambiguity2charMap: Map[Int, Char] = (for {
+      ambNr <- 1 to 50
+    } yield ambNr -> (charShift + pos2charMap.size + ambNr).toChar)(breakOut)
 
-    def toChar(file: File, prom: PromotableRole) =
-      promotion2charMap.getOrElse(file -> prom, voidChar)
-
-    val dropRole2charMap: Map[Role, Char] =
-      Role.all.filterNot(King==).zipWithIndex.map {
-        case (role, index) => role -> (charShift + pos2charMap.size + promotion2charMap.size + index).toChar
-      }(breakOut)
   }
 }

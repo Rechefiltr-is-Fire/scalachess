@@ -1,4 +1,4 @@
-package chess
+package draughts
 
 trait DecayingRecorder {
   def record(value: Float): DecayingStats
