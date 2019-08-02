@@ -42,10 +42,10 @@ final case class LagTracker(
 
   def moves = lagStats.samples
 
-  def lagMean: Option[Centis] = moves > 0 option Centis(lagStats.mean)
+  def lagMean: Option[Centis] = if (moves > 0) Option(Centis(lagStats.mean)) else None
 
   def compEstStdErr: Option[Float] =
-    moves > 2 option Math.sqrt(compEstSqErr).toFloat / (moves - 2)
+    if (moves > 2) Option(Math.sqrt(compEstSqErr).toFloat / (moves - 2)) else None
 
   def compAvg: Option[Centis] = totalComp / moves
 

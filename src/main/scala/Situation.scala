@@ -31,15 +31,15 @@ case class Situation(board: Board, color: Color) {
 
   private def calculateAmbiguitiesFrom(pos: Pos, moves: List[Move]) =
     moves.foldLeft(0) {
-      (ambs, m1) => ambs + moves.exists(m2 => m1.capture.fold(none[Pos])(_.headOption) == m2.capture.fold(none[Pos])(_.headOption) && m1.situationAfter.board.pieces != m2.situationAfter.board.pieces).fold(1, 0)
+      (ambs, m1) => ambs + moves.exists(m2 => m1.capture.fold(None: Option[Pos])(_.headOption) == m2.capture.fold(None: Option[Pos])(_.headOption) && m1.situationAfter.board.pieces != m2.situationAfter.board.pieces).fold(1, 0)
     }
 
   def movesFrom(pos: Pos, finalSquare: Boolean = false): List[Move] = board.variant.validMovesFrom(this, pos, finalSquare)
 
   def captureLengthFrom(pos: Pos): Option[Int] =
     movesFrom(pos) match {
-      case head :: _ => head.capture.fold(none[Int])(_.length.some)
-      case _ => none
+      case head :: _ => head.capture.fold(None: Option[Int])(h => Some(h.length))
+      case _ => None
     }
 
   lazy val allDestinations: Map[Pos, List[Pos]] = validMoves mapValues { _ map (_.dest) }
@@ -71,10 +71,10 @@ case class Situation(board: Board, color: Color) {
     (board valid strict) && !end
 
   lazy val status: Option[Status] =
-    if (checkMate) Status.Mate.some
-    else if (variantEnd) Status.VariantEnd.some
-    else if (autoDraw) Status.Draw.some
-    else none
+    if (checkMate) Some(Status.Mate)
+    else if (variantEnd) Some(Status.VariantEnd)
+    else if (autoDraw) Some(Status.Draw)
+    else None
 
   def move(from: Pos, to: Pos, promotion: Option[PromotableRole], finalSquare: Boolean = false, forbiddenUci: Option[List[String]] = None, captures: Option[List[Pos]] = None): Valid[Move] =
     board.variant.move(this, from, to, promotion, finalSquare, forbiddenUci, captures)

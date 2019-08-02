@@ -19,7 +19,7 @@ case class DraughtsGame(
     finalSquare: Boolean = false,
     captures: Option[List[Pos]] = None
   ): Valid[(DraughtsGame, Move)] =
-    situation.move(orig, dest, promotion, finalSquare, none, captures).map { move =>
+    situation.move(orig, dest, promotion, finalSquare, None, captures).map { move =>
       apply(move) -> move
     }
 
@@ -81,6 +81,8 @@ case class DraughtsGame(
   def withPlayer(c: Color) = copy(situation = situation.copy(color = c))
 
   def withTurns(t: Int) = copy(turns = t)
+
+  def withPdnMoves(x: Vector[String]) = copy(pdnMoves = x)
 }
 
 object DraughtsGame {
@@ -93,7 +95,7 @@ object DraughtsGame {
   def apply(board: Board, color: Color): DraughtsGame = new DraughtsGame(Situation(board, color))
 
   def apply(variantOption: Option[draughts.variant.Variant], fen: Option[String]): DraughtsGame = {
-    val variant = variantOption | draughts.variant.Standard
+    val variant = variantOption getOrElse draughts.variant.Standard
     val g = apply(variant)
     fen.flatMap {
       format.Forsyth.<<<@(variant, _)

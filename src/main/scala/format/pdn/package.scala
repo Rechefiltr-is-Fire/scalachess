@@ -38,7 +38,7 @@ case class Pdn(
       if (initial.comments.nonEmpty) initial.comments.mkString("{ ", " } { ", " }\n")
       else ""
     val turnStr = turns mkString " "
-    val endStr = tags(_.Result) | ""
+    val endStr = tags(_.Result) getOrElse ""
     s"$tags\n\n$initStr$turnStr $endStr"
   }.trim + "\n"
 
@@ -63,9 +63,9 @@ case class Turn(
   )
 
   def updateLast(f: Move => Move) = {
-    black.map(m => copy(black = f(m).some)) orElse
-      white.map(m => copy(white = f(m).some))
-  } | this
+    black.map(m => copy(black = Some(f(m)))) orElse
+      white.map(m => copy(white = Some(f(m))))
+  } getOrElse this
 
   def isEmpty = white.isEmpty && black.isEmpty
 
@@ -90,11 +90,11 @@ object Turn {
   def fromMoves(moves: List[Move], ply: Int): List[Turn] = {
     moves.foldLeft((List[Turn](), ply)) {
       case ((turns, p), move) if p % 2 == 1 =>
-        (Turn((p + 1) / 2, move.some, none) :: turns) -> (p + 1)
+        (Turn((p + 1) / 2, Some(move), None) :: turns) -> (p + 1)
       case ((Nil, p), move) =>
-        (Turn((p + 1) / 2, none, move.some) :: Nil) -> (p + 1)
+        (Turn((p + 1) / 2, None, Some(move)) :: Nil) -> (p + 1)
       case ((t :: tt, p), move) =>
-        (t.copy(black = move.some) :: tt) -> (p + 1)
+        (t.copy(black = Some(move)) :: tt) -> (p + 1)
     }
   }._1.reverse
 }
@@ -116,8 +116,8 @@ case class Move(
 
   private def clockString: Option[String] =
     if (secondsLeft._1.isDefined && secondsLeft._2.isDefined)
-      s"[%clock ${turn.fold("w", "W")}${Move.formatPdnSeconds(secondsLeft._1.get)} ${turn.fold("B", "b")}${Move.formatPdnSeconds(secondsLeft._2.get)}]".some
-    else none
+      Some(s"[%clock ${turn.fold("w", "W")}${Move.formatPdnSeconds(secondsLeft._1.get)} ${turn.fold("B", "b")}${Move.formatPdnSeconds(secondsLeft._2.get)}]")
+    else None
 
   override def toString = {
     val glyphStr = glyphs.toList.map({
@@ -144,15 +144,6 @@ object Move {
   private def noDoubleLineBreak(txt: String) =
     noDoubleLineBreakRegex.replaceAllIn(txt, "\n")
 
-  private def formatPdnSeconds(t: Int) = periodFormatter.print(
-    org.joda.time.Duration.standardSeconds(t).toPeriod
-  )
-
-  private[this] val periodFormatter = new org.joda.time.format.PeriodFormatterBuilder()
-    .printZeroAlways
-    .minimumPrintedDigits(1).appendHours.appendSeparator(":")
-    .minimumPrintedDigits(2).appendMinutes.appendSeparator(":")
-    .appendSeconds
-    .toFormatter
+  private def formatPdnSeconds(t: Int) = s"${t}s"
 
 }

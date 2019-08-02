@@ -88,7 +88,7 @@ case class Actor(
                         dirs.foreach {
                           captDir =>
                             if (captDir._1 != opposite)
-                              walkCaptures(captDir, boardAfter, landingPos, destPos.getOrElse(landingPos).some, destBoard.getOrElse(boardAfter).some, newSquares, newTaken, newCaptureValue)
+                              walkCaptures(captDir, boardAfter, landingPos, Some(destPos.getOrElse(landingPos)), Some(destBoard.getOrElse(boardAfter)), newSquares, newTaken, newCaptureValue)
                         }
                       }
                   }
@@ -192,7 +192,7 @@ case class Actor(
           dirs.foreach {
             captDir =>
               if (captDir._1 != opposite) {
-                val extraCapture = walkUntilCapture(captDir, curBoard, curPos, destPos.getOrElse(curPos).some, destBoard.getOrElse(curBoard).some, newSquares, newTaken, newCaptureValue) - newCaptureValue
+                val extraCapture = walkUntilCapture(captDir, curBoard, curPos, Some(destPos.getOrElse(curPos)), Some(destBoard.getOrElse(curBoard)), newSquares, newTaken, newCaptureValue) - newCaptureValue
                 if (extraCapture > maxExtraCapts)
                   maxExtraCapts = extraCapture
               }
@@ -235,11 +235,11 @@ case class Actor(
     situationBefore = Situation(board, piece.color),
     after = after,
     capture = capture match {
-      case Some(capt) => List(capt).some
+      case Some(capt) => Some(List(capt))
       case _ => None
     },
     taken = taken match {
-      case Some(take) => List(take).some
+      case Some(take) => Some(List(take))
       case _ => None
     },
     promotion = None
@@ -260,8 +260,8 @@ case class Actor(
     dest = dest,
     situationBefore = Situation(board, piece.color),
     after = after,
-    capture = capture.some,
-    taken = taken.some,
+    capture = Some(capture),
+    taken = Some(taken),
     promotion = None
   )
 

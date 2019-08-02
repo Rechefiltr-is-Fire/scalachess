@@ -38,7 +38,7 @@ object Parser extends scalaz.syntax.ToTraverseOps {
       strMoves = parsedMoves._2
       resultOption = parsedMoves._3
       tags = resultOption.filterNot(_ => preTags.exists(_.Result)).fold(preTags)(t => preTags + t)
-      sans ← objMoves(strMoves, tags.variant | Variant.default)
+      sans ← objMoves(strMoves, tags.variant getOrElse Variant.default)
     } yield ParsedPdn(init, tags, sans)
   } catch {
     case _: StackOverflowError =>
@@ -60,7 +60,7 @@ object Parser extends scalaz.syntax.ToTraverseOps {
         MoveParser(MovesParser.collapsedSan(san), variant) map { m =>
           m withComments comments withVariations {
             variations.map { v =>
-              objMoves(v, variant) | Sans.empty
+              objMoves(v, variant).fold(_ => Sans.empty, identity)
             }.filter(_.value.nonEmpty)
           } mergeGlyphs glyphs
         }

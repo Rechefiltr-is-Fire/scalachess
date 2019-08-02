@@ -74,18 +74,18 @@ case object Frisian extends Variant(
           board updateHistory { h =>
             val kingmove = act.piece.role == King && uci.promotion.isEmpty && captured.fold(true)(_.isEmpty)
             val differentKing = kingmove && act.color.fold(h.kingMoves.whiteKing, h.kingMoves.blackKing).fold(false)(_ != uci.orig)
-            val hist = if (differentKing) h.withKingMove(act.color, none, false) else h
-            hist.withKingMove(act.color, uci.dest.some, kingmove, tookLastMan)
+            val hist = if (differentKing) h.withKingMove(act.color, None, false) else h
+            hist.withKingMove(act.color, Some(uci.dest), kingmove, tookLastMan)
           }
         else {
           val promotedLastMan = uci.promotion.nonEmpty
           if (tookLastMan)
             board updateHistory { h =>
-              val hist = if (promotedLastMan) h.withKingMove(act.color, none, false) else h
-              h.withKingMove(!act.color, none, false)
+              val hist = if (promotedLastMan) h.withKingMove(act.color, None, false) else h
+              h.withKingMove(!act.color, None, false)
             }
           else if (promotedLastMan)
-            board updateHistory { _.withKingMove(act.color, none, false) }
+            board updateHistory { _.withKingMove(act.color, None, false) }
           else
             board
         }

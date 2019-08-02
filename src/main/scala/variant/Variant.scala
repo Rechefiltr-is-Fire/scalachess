@@ -214,8 +214,8 @@ object Variant {
 
   def apply(id: Int): Option[Variant] = byId get id
   def apply(key: String): Option[Variant] = byKey get key
-  def orDefault(id: Int): Variant = apply(id) | default
-  def orDefault(key: String): Variant = apply(key) | default
+  def orDefault(id: Int): Variant = apply(id) getOrElse default
+  def orDefault(key: String): Variant = apply(key) getOrElse default
 
   def byName(name: String): Option[Variant] =
     all find (_.name.toLowerCase == name.toLowerCase)

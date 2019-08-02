@@ -28,12 +28,12 @@ object Replay {
     variant: draughts.variant.Variant,
     finalSquare: Boolean
   ): Valid[Reader.Result] =
-    moveStrs.some.filter(_.nonEmpty) toValid "[replay] pdn is empty" flatMap { nonEmptyMoves =>
+    Some(moveStrs).filter(_.nonEmpty) toValid "[replay] pdn is empty" flatMap { nonEmptyMoves =>
       Reader.moves(
         nonEmptyMoves,
         Tags(List(
           initialFen map { fen => Tag(_.FEN, fen) },
-          variant.some.filterNot(_.standard) map { v => Tag(_.GameType, v.gameType) }
+          Some(variant).filterNot(_.standard) map { v => Tag(_.GameType, v.gameType) }
         ).flatten),
         finalSquare
       )
@@ -67,16 +67,16 @@ object Replay {
   ): (DraughtsGame, List[(DraughtsGame, Uci.WithSan)], Option[ErrorMessage]) = {
 
     def mk(g: DraughtsGame, moves: List[(San, String)], ambs: List[(San, String)]): (List[(DraughtsGame, Uci.WithSan)], Option[ErrorMessage]) = {
-      var newAmb = none[(San, String)]
+      var newAmb = None: Option[(San, String)]
       val res = moves match {
         case (san, sanStr) :: rest =>
-          san(g.situation, iteratedCapts, if (ambs.isEmpty) None else ambs.collect({ case (ambSan, ambUci) if ambSan == san => ambUci }).some).fold(
-            err => (Nil, err.head.some),
+          san(g.situation, iteratedCapts, if (ambs.isEmpty) None else Some(ambs.collect({ case (ambSan, ambUci) if ambSan == san => ambUci }))).fold(
+            err => (Nil, Some(err.head)),
             move => {
               val newGame = g(move)
               val uci = move.toUci
               if (iteratedCapts && move.capture.fold(false)(_.lengthCompare(1) > 0) && move.situationBefore.ambiguitiesMove(move) > 0)
-                newAmb = (san -> uci.uci).some
+                newAmb = Some((san -> uci.uci))
               mk(newGame, rest, if (newAmb.isDefined) newAmb.get :: ambs else ambs) match {
                 case (next, msg) => ((newGame, Uci.WithSan(uci, sanStr)) :: next, msg)
               }
@@ -88,9 +88,9 @@ object Replay {
       else res
     }
 
-    val init = makeGame(variant, initialFen.some)
+    val init = makeGame(variant, Some(initialFen))
     Parser.moves(moveStrs, variant).fold(
-      err => List.empty[(DraughtsGame, Uci.WithSan)] -> err.head.some,
+      err => List.empty[(DraughtsGame, Uci.WithSan)] -> Some(err.head),
       moves => mk(init, moves.value zip moveStrs, Nil)
     ) match {
         case (games, err) => (init, games, err)
@@ -105,20 +105,20 @@ object Replay {
   ): List[String] = {
 
     def mk(g: DraughtsGame, moves: List[String], ambs: List[(String, String)]): (List[String], Option[ErrorMessage]) = {
-      var newAmb = none[(String, String)]
+      var newAmb = None: Option[(String, String)]
       val res = moves match {
         case uci :: rest => Uci.Move(uci) match {
           case Some(uciMove) => Std(uciMove.orig, uciMove.dest, uciMove.capture.fold(false)(_.nonEmpty)).move(
             g.situation, true,
-            if (ambs.isEmpty) None else ambs.collect({ case (ambFrom, ambUci) if ambFrom == uci => ambUci }).some,
+            if (ambs.isEmpty) None else Some(ambs.collect({ case (ambFrom, ambUci) if ambFrom == uci => ambUci })),
             uciMove.capture
           ).fold(
-              err => (Nil, err.head.some),
+              err => (Nil, Some(err.head)),
               move => {
                 val newGame = g(move, true)
                 val scanMove = move.toScanMove
                 if (move.capture.fold(false)(_.lengthCompare(1) > 0) && move.situationBefore.ambiguitiesMove(move) > 0)
-                  newAmb = (uci -> move.toUci.uci).some
+                  newAmb = Some((uci -> move.toUci.uci))
                 mk(newGame, rest, if (newAmb.isDefined) newAmb.get :: ambs else ambs) match {
                   case (next, msg) => (scanMove :: next, msg)
                 }
@@ -132,7 +132,7 @@ object Replay {
       else res
     }
 
-    val init = makeGame(variant, initialFen.some)
+    val init = makeGame(variant, Some(initialFen))
     val moveList = if (iteratedCapts) uciMoves.toList
     else uciMoves.foldRight(List[String]()) {
       (move, moves) =>
@@ -184,7 +184,7 @@ object Replay {
     }
 
   private def initialFenToSituation(initialFen: Option[FEN], variant: draughts.variant.Variant): Situation = {
-    initialFen.flatMap { fen => Forsyth << fen.value } | Situation(draughts.variant.Standard)
+    initialFen.flatMap { fen => Forsyth << fen.value } getOrElse Situation(draughts.variant.Standard)
   } withVariant variant
 
   def boards(
@@ -266,7 +266,7 @@ object Replay {
 
       val sit = initialFen.flatMap {
         Forsyth.<<@(variant, _)
-      } | Situation(variant)
+      } getOrElse Situation(variant)
 
       Parser.moves(moveStrs, sit.board.variant) flatMap { moves =>
         recursivePlyAtFen(sit, moves.value, 1)
@@ -274,7 +274,7 @@ object Replay {
     }
 
   private def makeGame(variant: draughts.variant.Variant, initialFen: Option[String]): DraughtsGame = {
-    val g = DraughtsGame(variant.some, initialFen)
+    val g = DraughtsGame(Some(variant), initialFen)
     g.copy(startedAtTurn = g.turns)
   }
 }

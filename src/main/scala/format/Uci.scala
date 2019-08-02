@@ -35,7 +35,7 @@ object Uci
 
     def origDest = orig -> dest
 
-    def apply(situation: Situation, finalSquare: Boolean = false) = situation.move(orig, dest, promotion, finalSquare, none, capture)
+    def apply(situation: Situation, finalSquare: Boolean = false) = situation.move(orig, dest, promotion, finalSquare, None, capture)
 
     def toSan = s"${orig.shortKey}${if (capture.nonEmpty) "x" else "-"}${dest.shortKey}"
 

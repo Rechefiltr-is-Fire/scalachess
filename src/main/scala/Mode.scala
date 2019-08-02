@@ -25,5 +25,5 @@ object Mode {
 
   val default: Mode = Casual
 
-  def orDefault(id: Int): Mode = apply(id) | default
+  def orDefault(id: Int): Mode = apply(id) getOrElse default
 }

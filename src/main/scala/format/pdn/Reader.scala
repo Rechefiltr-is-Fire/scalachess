@@ -33,7 +33,7 @@ object Reader {
     makeReplay(makeGame(parsed.tags), op(parsed.sans))
 
   def movesWithSans(moveStrs: Traversable[String], op: Sans => Sans, tags: Tags, iteratedCapts: Boolean = false): Valid[Result] =
-    Parser.moves(moveStrs, tags.variant | variant.Variant.default) map { moves =>
+    Parser.moves(moveStrs, tags.variant getOrElse variant.Variant.default) map { moves =>
       makeReplay(makeGame(tags), op(moves), iteratedCapts)
     }
 
@@ -42,14 +42,14 @@ object Reader {
 
   private def makeReplay(game: DraughtsGame, sans: Sans, iteratedCapts: Boolean = false): Result = {
     def mk(replay: Replay, moves: List[San], ambs: List[(San, String)]): Result = {
-      var newAmb = none[(San, String)]
+      var newAmb = None: Option[(San, String)]
       val res = moves match {
         case san :: rest =>
-          san(replay.state.situation, iteratedCapts, if (ambs.isEmpty) None else ambs.collect({ case (ambSan, ambUci) if ambSan == san => ambUci }).some).fold(
+          san(replay.state.situation, iteratedCapts, if (ambs.isEmpty) None else Some(ambs.collect({ case (ambSan, ambUci) if ambSan == san => ambUci }))).fold(
             err => { Result.Incomplete(replay, err) },
             move => {
               if (iteratedCapts && move.capture.fold(false)(_.lengthCompare(1) > 0) && move.situationBefore.ambiguitiesMove(move) > 0)
-                newAmb = (san -> move.toUci.uci).some
+                newAmb = Some((san -> move.toUci.uci))
               mk(replay addMove move, rest, if (newAmb.isDefined) newAmb.get :: ambs else ambs)
             }
           )

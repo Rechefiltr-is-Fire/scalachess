@@ -49,7 +49,7 @@ case class Std(
   def withMetas(m: Metas) = copy(metas = m)
 
   def move(situation: Situation, iteratedCapts: Boolean = false, forbiddenUci: Option[List[String]] = None, captures: Option[List[Pos]] = None): Valid[draughts.Move] =
-    situation.board.pieces.foldLeft(none[draughts.Move]) {
+    situation.board.pieces.foldLeft(None: Option[draughts.Move]) {
       case (None, (pos, piece)) if piece.color == situation.color && pos == src =>
         val a = Actor(piece, pos, situation.board)
         val m = a.validMoves.find { m => m.dest == dest && (!iteratedCapts || m.situationAfter.ghosts == 0) }

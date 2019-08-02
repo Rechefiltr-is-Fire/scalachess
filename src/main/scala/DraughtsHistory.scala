@@ -16,8 +16,8 @@ case class KingMoves(white: Int = 0, black: Int = 0, whiteKing: Option[Pos] = No
   def reset(color: Color) = copy(
     white = color.fold(0, white),
     black = color.fold(black, 0),
-    whiteKing = color.fold(none, whiteKing),
-    blackKing = color.fold(blackKing, none)
+    whiteKing = color.fold(None, whiteKing),
+    blackKing = color.fold(blackKing, None)
   )
 
   def nonEmpty = white > 0 || black > 0

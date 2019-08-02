@@ -23,11 +23,11 @@ object InsufficientWinningMaterial {
   def apply(board: Board): Option[Int] =
     if (board.variant.frisianVariant) {
       if (board.pieces.size <= 3 && board.roleCount(Man) == 0) {
-        if (board.pieces.size == 3) 14.some
-        else 4.some
-      } else none
+        if (board.pieces.size == 3) Some(14)
+        else Some(4)
+      } else None
     } else if (board.variant.antidraughts || board.variant.breakthrough)
-      none
+      None
     else if (board.pieces.size <= 4) {
 
       val whitePieces = board.piecesOf(Color.White)
@@ -35,18 +35,18 @@ object InsufficientWinningMaterial {
 
       if (whitePieces.size == 1 && whitePieces.count(_._2.role == King) == 1) {
 
-        if (blackPieces.count(_._2.role == King) == 0) 50.some
-        else if (blackPieces.size <= 2) 10.some
-        else 32.some
+        if (blackPieces.count(_._2.role == King) == 0) Some(50)
+        else if (blackPieces.size <= 2) Some(10)
+        else Some(32)
 
       } else if (blackPieces.size == 1 && blackPieces.count(_._2.role == King) == 1) {
 
-        if (whitePieces.count(_._2.role == King) == 0) 50.some
-        else if (whitePieces.size <= 2) 10.some
-        else 32.some
+        if (whitePieces.count(_._2.role == King) == 0) Some(50)
+        else if (whitePieces.size <= 2) Some(10)
+        else Some(32)
 
-      } else 50.some
+      } else Some(50)
 
-    } else 50.some
+    } else Some(50)
 
 }

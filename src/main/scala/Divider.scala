@@ -2,9 +2,9 @@ package draughts
 
 case class Division(middle: Option[Int], end: Option[Int], plies: Int) {
 
-  def openingSize: Int = middle | plies
+  def openingSize: Int = middle getOrElse plies
   def middleSize: Option[Int] = middle.map { m =>
-    (end | plies) - m
+    (end getOrElse plies) - m
   }
   def endSize = end.map(plies -)
 
@@ -26,17 +26,17 @@ object Divider {
 
     val indexedBoards: List[(Board, Int)] = boards.zipWithIndex
 
-    val midGame = indexedBoards.foldLeft(none[Int]) {
+    val midGame = indexedBoards.foldLeft(None: Option[Int]) {
       case (found: Some[_], _) => found
       case (_, (board, index)) =>
-        (majorsAndMinors(board) <= 10 ||
-          mixedness(board) > 150) option index
+        if (majorsAndMinors(board) <= 10 ||
+          mixedness(board) > 150) Some(index) else None
     }
 
     val endGame =
-      if (midGame.isDefined) indexedBoards.foldLeft(none[Int]) {
+      if (midGame.isDefined) indexedBoards.foldLeft(None: Option[Int]) {
         case (found: Some[_], _) => found
-        case (_, (board, index)) => (majorsAndMinors(board) <= 6) option index
+        case (_, (board, index)) => if (majorsAndMinors(board) <= 6) Some(index) else None
       }
       else None
 

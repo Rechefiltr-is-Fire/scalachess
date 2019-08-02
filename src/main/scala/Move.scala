@@ -56,12 +56,12 @@ case class Move(
   def color = piece.color
 
   def withPromotion(op: Option[PromotableRole]): Option[Move] =
-    op.fold(this.some) { p =>
+    op.fold(Some(this): Option[Move]) { p =>
       if ((after count color.king) > (before count color.king)) for {
         b2 ← after take dest
         b3 ← b2.place(color - p, dest)
       } yield copy(after = b3, promotion = Some(p))
-      else this.some
+      else Some(this)
     }
 
   def withAfter(newBoard: Board) = copy(after = newBoard)
@@ -69,7 +69,7 @@ case class Move(
   def withMetrics(m: MoveMetrics) = copy(metrics = m)
 
   def toUci = Uci.Move(orig, dest, promotion, capture)
-  def toShortUci = Uci.Move(orig, dest, promotion, if (capture.isDefined) capture.get.takeRight(1).some else None)
+  def toShortUci = Uci.Move(orig, dest, promotion, if (capture.isDefined) Some(capture.get.takeRight(1)) else None)
 
   def toScanMove =
     if (taken.isDefined) (List(orig.shortKey, dest.shortKey) ::: taken.get.reverse.map(_.shortKey)) mkString "x"

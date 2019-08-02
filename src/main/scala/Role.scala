@@ -48,7 +48,7 @@ object Role {
 
   def valueOf(r: Role): Option[Int] = r match {
     case Man => Some(1)
-    case King => Some(2)
+    case King => 2.some
     case _ => Some(0)
   }
 

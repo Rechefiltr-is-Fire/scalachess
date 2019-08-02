@@ -45,12 +45,12 @@ object Ecopening {
 
   def fromGame(pdnmoves: List[String]): Option[Ecopening] = Replay.boards(
     moveStrs = pdnmoves take EcopeningDB.MAX_MOVES,
-    initialFen = none,
+    initialFen = None,
     variant = variant.Standard
   ).toOption flatMap matchChronoBoards
 
   private def matchChronoBoards(boards: List[Board]): Option[Ecopening] =
-    boards.reverse.foldLeft(none[Ecopening]) {
+    boards.reverse.foldLeft(None: Option[Ecopening]) {
       case (acc, board) => acc orElse {
         EcopeningDB.allByFen get format.Forsyth.exportBoard(board)
       }

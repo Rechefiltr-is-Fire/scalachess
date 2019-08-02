@@ -53,7 +53,7 @@ object Forsyth {
       val halfMoveClock = splitted find { s => s.length > 1 && s.charAt(0) == 'H' } flatMap { s => parseIntOption(s drop 1) } map (_ max 0 min 100)
       SituationPlus(
         halfMoveClock.map(sit.history.setHalfMoveClock).fold(sit)(sit.withHistory),
-        fullMoveNumber | 1
+        fullMoveNumber getOrElse 1
       )
     }
   }
@@ -75,7 +75,7 @@ object Forsyth {
    */
   def makeBoard(variant: Variant, rawSource: String): Option[Board] = read(rawSource) { fen =>
     val fenPieces = fen.split(':').drop(1)
-    if (fenPieces.isEmpty) none
+    if (fenPieces.isEmpty) None
     else {
       val allFields = new scala.collection.mutable.ArrayBuffer[(Pos, Piece)]
       for (line <- fenPieces) {
@@ -94,7 +94,7 @@ object Forsyth {
               }
           }
       }
-      Board(allFields, variant).some
+      Some(Board(allFields, variant))
     }
   }
 

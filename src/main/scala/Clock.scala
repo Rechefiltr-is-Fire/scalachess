@@ -1,7 +1,5 @@
 package draughts
 
-import java.text.DecimalFormat
-
 import Clock.Config
 
 // All unspecified durations are expressed in seconds
@@ -61,7 +59,7 @@ case class Clock(
     }
     case Some(t) => {
       val elapsed = toNow(t)
-      val lag = ~metrics.reportedLag(elapsed) nonNeg
+      val lag = metrics.reportedLag(elapsed).getOrElse(Centis(0)) nonNeg
 
       val player = players(color)
       val (lagComp, lagTrack) = player.lag.onMove(lag)
@@ -69,7 +67,7 @@ case class Clock(
       val moveTime = (elapsed - lagComp) nonNeg
 
       val clockActive = gameActive && moveTime < player.remaining
-      val inc = clockActive ?? player.increment
+      val inc = if (clockActive) player.increment else Centis(0)
 
       val newC = updatePlayer(color) {
         _.takeTime(moveTime - inc)
@@ -104,7 +102,7 @@ case class Clock(
   def berserked(c: Color) = players(c).berserk
   def lag(c: Color) = players(c).lag
 
-  def lagCompAvg = players map { ~_.lag.compAvg } reduce (_ avg _)
+  def lagCompAvg = players map { _.lag.compAvg.getOrElse(Centis(0)) } reduce (_ avg _)
 
   // Lowball estimate of next move's lag comp for UI butter.
   def lagCompEstimate(c: Color) = players(c).lag.compEstimate
@@ -152,7 +150,6 @@ object ClockPlayer {
 }
 
 object Clock {
-  private val limitFormatter = new DecimalFormat("#.##")
 
   // All unspecified durations are expressed in seconds
   case class Config(limitSeconds: Int, incrementSeconds: Int) {
@@ -181,7 +178,7 @@ object Clock {
       case 30 => "½"
       case 45 => "¾"
       case 90 => "1.5"
-      case _ => limitFormatter.format(limitSeconds / 60d)
+      case _ => limit.toString
     }
 
     def show = toString
@@ -204,7 +201,7 @@ object Clock {
       init <- parseIntOption(initStr)
       inc <- parseIntOption(incStr)
     } yield Config(init, inc)
-    case _ => none
+    case _ => None
   }
 
   def apply(limit: Int, increment: Int): Clock = apply(Config(limit, increment))
