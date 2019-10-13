@@ -5,7 +5,8 @@ import scala.collection.breakOut
 
 import Pos.posAt
 
-abstract class Variant(
+// Correctness depends on singletons for each variant ID
+abstract class Variant private[variant] (
     val id: Int,
     val gameType: Int,
     val key: String,
@@ -210,6 +211,10 @@ abstract class Variant(
   val moveDirsAll: Directions = moveDirsColor(White) ::: moveDirsColor(Black)
 
   override def toString = s"Variant($name)"
+
+  override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+
+  override def hashCode: Int = id
 }
 
 object Variant {
