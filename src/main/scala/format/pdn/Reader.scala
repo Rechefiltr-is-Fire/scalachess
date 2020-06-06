@@ -44,11 +44,11 @@ object Reader {
       val res = moves match {
         case san :: rest =>
           san(replay.state.situation, iteratedCapts, if (ambs.isEmpty) None else Some(ambs.collect({ case (ambSan, ambUci) if ambSan == san => ambUci }))).fold(
-            err => { Result.Incomplete(replay, err) },
+            err => Result.Incomplete(replay, err),
             move => {
               if (iteratedCapts && move.capture.fold(false)(_.lengthCompare(1) > 0) && move.situationBefore.ambiguitiesMove(move) > 0)
                 newAmb = Some((san -> move.toUci.uci))
-              mk(replay addMove move, rest, if (newAmb.isDefined) newAmb.get :: ambs else ambs)
+              mk(replay.addMove(move, iteratedCapts), rest, if (newAmb.isDefined) newAmb.get :: ambs else ambs)
             }
           )
         case _ => Result.Complete(replay)
