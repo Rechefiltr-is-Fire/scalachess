@@ -140,9 +140,13 @@ case class Actor(
 
     // "transposition table", dramatically reduces calculation time for extreme frisian positions like W:WK50:B3,7,10,12,13,14,17,20,21,23,25,30,32,36,38,39,41,43,K47
     val cacheExtraCapts = scala.collection.mutable.LongMap.empty[Int]
+    // apply hackfix to prevent extreme positions crashing the app
+    val maxCache = 1400
 
+    @tailrec
     def walkUntilCapture(walkDir: Direction, curBoard: Board, curPos: Pos, destPos: Option[Pos], destBoard: Option[Board], allSquares: List[Pos], allTaken: List[Pos], captureValue: Int): Int =
-      walkDir._2(curPos) match {
+      if (cacheExtraCapts.size > maxCache) 0
+      else walkDir._2(curPos) match {
         case Some(nextPos) =>
           curBoard(nextPos) match {
             case None =>
@@ -171,7 +175,8 @@ case class Actor(
     def walkAfterCapture(walkDir: Direction, curBoard: Board, curPos: Pos, destPos: Option[Pos], destBoard: Option[Board], allSquares: List[Pos], newTaken: List[Pos], newCaptureValue: Int): Int = {
       val captsHash = curBoard.pieces.hashCode() + walkDir._1
       val cachedExtraCapts = cacheExtraCapts.get(captsHash)
-      cachedExtraCapts match {
+      if (cacheExtraCapts.size > maxCache) 0
+      else cachedExtraCapts match {
         case Some(extraCapts) if newCaptureValue + extraCapts < bestCaptureValue =>
           // no need to calculate lines where we know they will end up too short
           newCaptureValue + extraCapts
