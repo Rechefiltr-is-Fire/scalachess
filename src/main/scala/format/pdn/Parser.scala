@@ -131,7 +131,7 @@ object Parser {
       "(" ~> strMoves <~ ")" ^^ { case (_, sms, _) => sms }
     }
 
-    def commentary: Parser[String] = blockCommentary | inlineCommentary
+    def commentary: Parser[String] = blockCommentary | inlineCommentary | fenCommentary
 
     def blockCommentary: Parser[String] = as("block comment") {
       "{" ~> """[^\}]*""".r <~ "}"
@@ -141,7 +141,11 @@ object Parser {
       ";" ~> """.+""".r
     }
 
-    val result: Parser[String] = "*" | "1/2-1/2" | "½-½" | "1-1" | "0-1" | "0-2" | "1-0" | "2-0"
+    def fenCommentary: Parser[String] = as("fen comment") {
+      "/FEN \"" ~> """[\w:,]*""".r <~ "\"/"
+    }
+
+    val result: Parser[String] = "*" | "1/2-1/2" | "½-½" | "0.5-0.5" | "1-1" | "0-1" | "0-2" | "1-0" | "2-0"
   }
 
   object MoveParser extends RegexParsers with Logging {
