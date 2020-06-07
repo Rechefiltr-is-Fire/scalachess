@@ -20,12 +20,11 @@ case class Board(
   def apply(x: Int, y: Int): Option[Piece] = posAt(x, y) flatMap pieces.get
   def apply(field: Int): Option[Piece] = posAt(field) flatMap pieces.get
 
+  def boardSize = variant.boardSize
+
   def posAt(x: Int, y: Int): Option[PosMotion] = variant.boardSize.pos.posAt(x, y)
   def posAt(field: Int): Option[PosMotion] = variant.boardSize.pos.posAt(field)
   def posAt(pos: Pos): PosMotion = variant.boardSize.pos.posAt(pos.fieldNumber).get
-
-  def promotablePos(pos: Pos, color: Color) =
-    posAt(pos).y == color.fold(variant.boardSize.promotableYWhite, variant.boardSize.promotableYBlack)
 
   lazy val actors: Map[Pos, Actor] = pieces map {
     case (pos, piece) => (pos, Actor(piece, posAt(pos), this))

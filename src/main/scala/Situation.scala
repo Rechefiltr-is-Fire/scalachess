@@ -2,6 +2,8 @@ package draughts
 
 import format.Uci
 
+import scala.collection.breakOut
+
 case class Situation(board: Board, color: Color) {
 
   lazy val actors = board actorsOf color
@@ -11,12 +13,16 @@ case class Situation(board: Board, color: Color) {
   lazy val validMoves: Map[Pos, List[Move]] = board.variant.validMoves(this)
   lazy val validMovesFinal: Map[Pos, List[Move]] = board.variant.validMoves(this, true)
 
-  lazy val allCaptures: Map[Pos, List[Move]] = board.variant.allCaptures(this)
+  lazy val allCaptures: Map[Pos, List[Move]] = actors.collect {
+    case actor if actor.captures.nonEmpty =>
+      actor.pos -> actor.captures
+  }(breakOut)
 
-  lazy val allMovesCaptureLength: Option[Int] =
-    if (validMoves exists (_._2 exists (_.captures)))
-      Some(validMoves.head._2.head.capture.fold(0)(_.length))
-    else None
+  lazy val allMovesCaptureLength: Int =
+    actors.foldLeft(0) {
+      case (max, actor) =>
+        Math.max(actor.captureLength, max)
+    }
 
   lazy val allAmbiguities: Int =
     board.variant.validMoves(this, true).filter(posMoves =>
@@ -37,10 +43,7 @@ case class Situation(board: Board, color: Color) {
   def movesFrom(pos: Pos, finalSquare: Boolean = false): List[Move] = board.variant.validMovesFrom(this, pos, finalSquare)
 
   def captureLengthFrom(pos: Pos): Option[Int] =
-    movesFrom(pos) match {
-      case head :: _ => head.capture.fold(None: Option[Int])(h => Some(h.length))
-      case _ => None
-    }
+    actorAt(pos).map(_.captureLength)
 
   lazy val allDestinations: Map[Pos, List[Pos]] = validMoves mapValues { _ map (_.dest) }
   lazy val allDestinationsFinal: Map[Pos, List[Pos]] = validMovesFinal mapValues { _ map (_.dest) }

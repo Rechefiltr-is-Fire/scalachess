@@ -13,6 +13,9 @@ case object Breakthrough extends Variant(
 ) {
 
   def pieces = Standard.pieces
+  def captureDirs = Standard.captureDirs
+  def moveDirsColor = Standard.moveDirsColor
+  def moveDirsAll = Standard.moveDirsAll
 
   // Win on promotion
   override def specialEnd(situation: Situation) =
@@ -24,7 +27,11 @@ case object Breakthrough extends Variant(
     else if (situation.board.kingPosOf(Black).isDefined) Some(Black)
     else None
 
-  // No drawing rules
+  override def maxDrawingMoves(board: Board): Option[Int] = None
+
+  /**
+   * No drawing rules
+   */
   override def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash =
     Hash(Situation(board, !move.piece.color))
 
