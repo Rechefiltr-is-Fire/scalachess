@@ -66,6 +66,9 @@ sealed trait BoardPos {
   def posAt(field: Int): Option[PosMotion]
   def posAt(field: String): Option[PosMotion]
   def piotr(c: Char): Option[PosMotion]
+  val hasAlgebraic: Boolean
+  def algebraic(field: Int): Option[String]
+  def algebraic(field: String): Option[String] = parseIntOption(field) flatMap algebraic
 }
 
 object Pos100 extends BoardPos {
@@ -232,9 +235,12 @@ object Pos100 extends BoardPos {
     if (field < 1 || field > 50) None
     else posCache(field - 1)
 
-  def posAt(field: String): Option[PosMotion] = parseIntOption(field).flatMap(posAt)
+  def posAt(field: String): Option[PosMotion] = parseIntOption(field) flatMap posAt
 
   def piotr(c: Char): Option[PosMotion] = allPiotrs get c
+
+  val hasAlgebraic = false
+  def algebraic(field: Int) = posAt(field) map { _.toString }
 
   private[this] def createPos(x: Int, y: Int): Pos100 = {
     val pos = new Pos100(x, y)
@@ -405,6 +411,20 @@ object Pos64 extends BoardPos {
 
   val posCache = new Array[Some[PosMotion]](32)
 
+  private lazy val alg2pos: Map[String, PosMotion] = posCache.map { p =>
+    val pos = p.get
+    val algY = 9 - pos.y
+    val algX = pos.x * 2 - algY % 2
+    s"${(96 + algX).toChar}$algY" -> pos
+  }(scala.collection.breakOut)
+
+  private lazy val field2alg: Map[Int, String] = posCache.map { p =>
+    val pos = p.get
+    val algY = 9 - pos.y
+    val algX = pos.x * 2 - algY % 2
+    pos.fieldNumber -> s"${(96 + algX).toChar}$algY"
+  }(scala.collection.breakOut)
+
   def posAt(x: Int, y: Int): Option[PosMotion] =
     if (x < 1 || x > 4 || y < 1 || y > 8) None
     else posCache(x + 4 * y - 5)
@@ -413,9 +433,13 @@ object Pos64 extends BoardPos {
     if (field < 1 || field > 32) None
     else posCache(field - 1)
 
-  def posAt(field: String): Option[PosMotion] = parseIntOption(field).flatMap(posAt)
+  def posAt(field: String): Option[PosMotion] =
+    parseIntOption(field).fold(alg2pos  get field)(posAt)
 
   def piotr(c: Char): Option[PosMotion] = allPiotrs get c
+
+  val hasAlgebraic = true
+  def algebraic(field: Int) = field2alg get field
 
   private[this] def createPos(x: Int, y: Int): Pos64 = {
     val pos = new Pos64(x, y)
