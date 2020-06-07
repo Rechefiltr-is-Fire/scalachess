@@ -3,8 +3,6 @@ package variant
 
 import scala.collection.breakOut
 
-import Pos.posAt
-
 // Correctness depends on singletons for each variant ID
 abstract class Variant private[variant] (
     val id: Int,
@@ -13,7 +11,8 @@ abstract class Variant private[variant] (
     val name: String,
     val shortName: String,
     val title: String,
-    val standardInitialPosition: Boolean
+    val standardInitialPosition: Boolean,
+    val boardSize: Board.BoardSize
 ) {
 
   def pieces: Map[Pos, Piece]
@@ -23,6 +22,7 @@ abstract class Variant private[variant] (
   def frysk = this == Frysk
   def antidraughts = this == Antidraughts
   def breakthrough = this == Breakthrough
+  def russian = this == Russian
   def fromPosition = this == FromPosition
 
   def frisianVariant = frisian || frysk
@@ -30,8 +30,6 @@ abstract class Variant private[variant] (
   def exotic = !standard
 
   def initialFen = format.Forsyth.initial
-
-  protected val standardRank = Vector(Man, Man, Man, Man, Man)
 
   def isValidPromotion(promotion: Option[PromotableRole]) = promotion match {
     case None => true
@@ -185,7 +183,7 @@ abstract class Variant private[variant] (
 
   protected def menOnPromotionRank(board: Board, color: Color) = {
     board.pieces.exists {
-      case (pos, Piece(c, r)) if c == color && r == Man && pos.y == color.promotableManY => true
+      case (pos, Piece(c, r)) if c == color && r == Man && board.promotablePos(pos, color) => true
       case _ => false
     }
   }
@@ -208,10 +206,7 @@ abstract class Variant private[variant] (
 
   lazy val rolesByPdn: Map[Char, Role] = roles.map { r => (r.pdn, r) }(breakOut)
 
-  def isUnmovedPawn(color: Color, pos: Pos) = pos.y == color.fold(2, 7)
-
   val captureDirs: Directions = List((Actor.UpLeft, _.moveUpLeft), (Actor.UpRight, _.moveUpRight), (Actor.DownLeft, _.moveDownLeft), (Actor.DownRight, _.moveDownRight))
-
   val moveDirsColor: Map[Color, Directions] = Map(White -> List((Actor.UpLeft, _.moveUpLeft), (Actor.UpRight, _.moveUpRight)), Black -> List((Actor.DownLeft, _.moveDownLeft), (Actor.DownRight, _.moveDownRight)))
   val moveDirsAll: Directions = moveDirsColor(White) ::: moveDirsColor(Black)
 
@@ -224,7 +219,7 @@ abstract class Variant private[variant] (
 
 object Variant {
 
-  val all = List(Standard, Frisian, Frysk, Antidraughts, Breakthrough, FromPosition)
+  val all = List(Standard, Frisian, Frysk, Antidraughts, Breakthrough, Russian, FromPosition)
   val byId = all map { v => (v.id, v) } toMap
   val byKey = all map { v => (v.key, v) } toMap
 
@@ -246,7 +241,8 @@ object Variant {
   val openingSensibleVariants: Set[Variant] = Set(
     draughts.variant.Standard,
     draughts.variant.Frisian,
-    draughts.variant.Breakthrough
+    draughts.variant.Breakthrough,
+    draughts.variant.Russian
   )
 
   val divisionSensibleVariants: Set[Variant] = Set(
@@ -254,12 +250,13 @@ object Variant {
     draughts.variant.Frisian,
     draughts.variant.Antidraughts,
     draughts.variant.Breakthrough,
+    draughts.variant.Russian,
     draughts.variant.FromPosition
   )
 
-  private[variant] def symmetricFourRank(rank: IndexedSeq[Role]): Map[Pos, Piece] = {
+  private[variant] def symmetricFourRank(rank: IndexedSeq[Role], boardSize: Board.BoardSize): Map[Pos, Piece] = {
     (for (y ← Seq(1, 2, 3, 4, 7, 8, 9, 10); x ← 1 to 5) yield {
-      posAt(x, y) map { pos =>
+      boardSize.pos.posAt(x, y) map { pos =>
         (pos, y match {
           case 1 => Black - rank(x - 1)
           case 2 => Black - rank(x - 1)
@@ -274,9 +271,24 @@ object Variant {
     }).flatten.toMap
   }
 
-  private[variant] def symmetricBackrank(rank: IndexedSeq[Role]): Map[Pos, Piece] = {
+  private[variant] def symmetricThreeRank(rank: IndexedSeq[Role], boardSize: Board.BoardSize): Map[Pos, Piece] = {
+    (for (y ← Seq(1, 2, 3, 6, 7, 8); x ← 1 to 4) yield {
+      boardSize.pos.posAt(x, y) map { pos =>
+        (pos, y match {
+          case 1 => Black - rank(x - 1)
+          case 2 => Black - rank(x - 1)
+          case 3 => Black - rank(x - 1)
+          case 6 => White - rank(x - 1)
+          case 7 => White - rank(x - 1)
+          case 8 => White - rank(x - 1)
+        })
+      }
+    }).flatten.toMap
+  }
+
+  private[variant] def symmetricBackrank(rank: IndexedSeq[Role], boardSize: Board.BoardSize): Map[Pos, Piece] = {
     (for (y ← Seq(1, 10); x ← 1 to 5) yield {
-      posAt(x, y) map { pos =>
+      boardSize.pos.posAt(x, y) map { pos =>
         (pos, y match {
           case 1 => Black - rank(x - 1)
           case 10 => White - rank(x - 1)

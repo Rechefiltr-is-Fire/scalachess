@@ -42,30 +42,31 @@ object Uci {
   object Move {
 
     def apply(move: String): Option[Move] = {
+      def posAt(f: String) = Board.BoardSize.max.posAt(f)
       if (move.length >= 6) {
-        val capts = (for { c <- 2 until move.length by 2 } yield Pos.posAt(move.slice(c, c + 2))).toList.flatten
+        val capts = (for { c <- 2 until move.length by 2 } yield posAt(move.slice(c, c + 2))).toList.flatten
         for {
-          orig <- Pos.posAt(move take 2)
-          dest <- Pos.posAt(move.slice(move.length - 2, move.length))
+          orig <- posAt(move take 2)
+          dest <- posAt(move.slice(move.length - 2, move.length))
         } yield Move(orig, dest, None, Some(capts.reverse))
       } else {
         for {
-          orig ← Pos.posAt(move take 2)
-          dest ← Pos.posAt(move drop 2 take 2)
+          orig ← posAt(move take 2)
+          dest ← posAt(move drop 2 take 2)
           promotion = move lift 4 flatMap Role.promotable
         } yield Move(orig, dest, promotion)
       }
     }
 
     def piotr(move: String) = for {
-      orig ← move.headOption flatMap Pos.piotr
-      dest ← move lift 1 flatMap Pos.piotr
+      orig ← move.headOption flatMap Board.BoardSize.max.piotr
+      dest ← move lift 1 flatMap Board.BoardSize.max.piotr
       promotion = move lift 2 flatMap Role.promotable
     } yield Move(orig, dest, promotion)
 
     def fromStrings(origS: String, destS: String, promS: Option[String]) = for {
-      orig ← Pos.posAt(origS)
-      dest ← Pos.posAt(destS)
+      orig ← Board.BoardSize.max.posAt(origS)
+      dest ← Board.BoardSize.max.posAt(destS)
       promotion = Role promotable promS
     } yield Move(orig, dest, promotion)
 

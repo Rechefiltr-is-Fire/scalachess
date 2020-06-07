@@ -1,7 +1,5 @@
 package draughts
 
-import Pos.posAt
-
 import scala.collection.breakOut
 import variant.Variant
 
@@ -20,11 +18,17 @@ case class Board(
   }
 
   def apply(x: Int, y: Int): Option[Piece] = posAt(x, y) flatMap pieces.get
-
   def apply(field: Int): Option[Piece] = posAt(field) flatMap pieces.get
 
+  def posAt(x: Int, y: Int): Option[PosMotion] = variant.boardSize.pos.posAt(x, y)
+  def posAt(field: Int): Option[PosMotion] = variant.boardSize.pos.posAt(field)
+  def posAt(pos: Pos): PosMotion = variant.boardSize.pos.posAt(pos.fieldNumber).get
+
+  def promotablePos(pos: Pos, color: Color) =
+    posAt(pos).y == color.fold(variant.boardSize.promotableYWhite, variant.boardSize.promotableYBlack)
+
   lazy val actors: Map[Pos, Actor] = pieces map {
-    case (pos, piece) => (pos, Actor(piece, pos, this))
+    case (pos, piece) => (pos, Actor(piece, posAt(pos), this))
   }
 
   lazy val actorsOf: Color.Map[Seq[Actor]] = {
@@ -149,4 +153,32 @@ object Board {
 
   def empty(variant: Variant): Board = Board(Nil, variant)
 
+  sealed abstract class BoardSize(
+      val pos: BoardPos,
+      val width: Int,
+      val height: Int
+  )
+  {
+    val key = (width * height).toString
+    val sizes = List(width, height)
+
+    val fields = (width * height) / 2
+    val promotableYWhite = 1
+    val promotableYBlack = height
+  }
+  object BoardSize {
+    val all: List[BoardSize] = List(D100, D64)
+    val max = D100.pos
+  }
+
+  case object D100 extends BoardSize(
+    pos = Pos100,
+    width = 10,
+    height = 10
+  )
+  case object D64 extends BoardSize(
+    pos = Pos64,
+    width = 8,
+    height = 8
+  )
 }

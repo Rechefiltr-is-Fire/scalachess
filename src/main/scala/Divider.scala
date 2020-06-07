@@ -85,7 +85,7 @@ object Divider {
       for {
         dy <- 0 to 1
         dx <- 0 to 1
-      } yield Pos.posAt(x + dx, y + dy)
+      } yield Pos100.posAt(x + dx, y + dy)
     }.toList.flatten
   }.toList
 
@@ -101,7 +101,7 @@ object Divider {
             else black = black + 1
           }
         }
-        mix + score(white, black, region.head.y)
+        mix + score(white, black, board.posAt(region.head).y)
     }
   }
 }
