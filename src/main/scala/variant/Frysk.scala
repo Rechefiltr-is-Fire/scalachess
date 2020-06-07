@@ -20,8 +20,8 @@ case object Frysk extends Variant(
   def moveDirsColor = Frisian.moveDirsColor
   def moveDirsAll = Standard.moveDirsAll
 
-  override def captureValue(board: Board, taken: List[Pos]) = Frisian.captureValue(board, taken)
-  override def captureValue(board: Board, taken: Pos) = Frisian.captureValue(board, taken)
+  override def getCaptureValue(board: Board, taken: List[Pos]) = Frisian.getCaptureValue(board, taken)
+  override def getCaptureValue(board: Board, taken: Pos) = Frisian.getCaptureValue(board, taken)
 
   override def validMoves(situation: Situation, finalSquare: Boolean = false): Map[Pos, List[Move]] = Frisian.validMoves(situation, finalSquare)
   override def finalizeBoard(board: Board, uci: format.Uci.Move, captured: Option[List[Piece]], remainingCaptures: Int): Board = Frisian.finalizeBoard(board, uci, captured, remainingCaptures)

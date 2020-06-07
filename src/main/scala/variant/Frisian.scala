@@ -1,7 +1,6 @@
 package draughts
 package variant
 
-import scala.annotation.tailrec
 import scala.collection.breakOut
 
 case object Frisian extends Variant(
