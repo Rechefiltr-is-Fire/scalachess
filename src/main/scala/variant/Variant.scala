@@ -339,7 +339,8 @@ abstract class Variant private[variant] (
    * Once a move has been decided upon from the available legal moves, the board is finalized
    * This removes any reaining ghostpieces if the capture sequence has ended
    */
-  def finalizeBoard(board: Board, uci: format.Uci.Move, captured: Option[List[Piece]], remainingCaptures: Int): Board = {
+  def finalizeBoard(board: Board, uci: format.Uci.Move, captured: Option[List[Piece]], situationBefore: Situation, finalSquare: Boolean): Board = {
+    val remainingCaptures = if (!finalSquare) situationBefore.captureLengthFrom(uci.orig).getOrElse(0) - 1 else 0
     if (remainingCaptures > 0) board
     else board.withoutGhosts
   }

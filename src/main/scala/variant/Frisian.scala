@@ -67,7 +67,8 @@ case object Frisian extends Variant(
       }(breakOut)
   }
 
-  override def finalizeBoard(board: Board, uci: format.Uci.Move, captured: Option[List[Piece]], remainingCaptures: Int): Board = {
+  override def finalizeBoard(board: Board, uci: format.Uci.Move, captured: Option[List[Piece]], situationBefore: Situation, finalSquare: Boolean): Board = {
+    val remainingCaptures = if (!finalSquare) situationBefore.captureLengthFrom(uci.orig).getOrElse(0) - 1 else 0
     if (remainingCaptures > 0) board
     else board.actorAt(uci.dest).fold(board) { act =>
       val tookLastMan = captured.fold(false)(_.exists(_.role == Man)) && board.count(Man, !act.color) == 0

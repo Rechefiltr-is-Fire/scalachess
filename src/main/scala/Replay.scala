@@ -153,7 +153,7 @@ object Replay {
     sans match {
       case Nil => success(Nil)
       case san :: rest => san(sit, finalSquare) flatMap { move =>
-        val after = Situation(move.afterWithLastMove, !sit.color)
+        val after = Situation(move.afterWithLastMove(finalSquare), !sit.color)
         recursiveUcis(after, rest, finalSquare) map { move.toUci :: _ }
       }
     }
@@ -162,7 +162,7 @@ object Replay {
     sans match {
       case Nil => success(Nil)
       case san :: rest => san(sit, finalSquare) flatMap { moveOrDrop =>
-        val after = Situation(moveOrDrop.afterWithLastMove, !sit.color)
+        val after = Situation(moveOrDrop.afterWithLastMove(finalSquare), !sit.color)
         recursiveSituations(after, rest, finalSquare) map { after :: _ }
       }
     }
@@ -171,7 +171,7 @@ object Replay {
     ucis match {
       case Nil => success(Nil)
       case uci :: rest => uci(sit, finalSquare) flatMap { move =>
-        val after = Situation(move.afterWithLastMove, !sit.color)
+        val after = Situation(move.afterWithLastMove(finalSquare), !sit.color)
         recursiveSituationsFromUci(after, rest, finalSquare) map { after :: _ }
       }
     }
