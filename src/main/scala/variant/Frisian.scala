@@ -17,6 +17,9 @@ case object Frisian extends Variant(
   import Variant._
 
   def pieces = Standard.pieces
+  def initialFen = Standard.initialFen
+  def startingPosition = Standard.startingPosition
+
   def moveDirsColor = Standard.moveDirsColor
   def moveDirsAll = Standard.moveDirsAll
 

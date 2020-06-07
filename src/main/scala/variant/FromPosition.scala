@@ -13,6 +13,9 @@ case object FromPosition extends Variant(
 ) {
 
   def pieces = Standard.pieces
+  def initialFen = Standard.initialFen
+  def startingPosition = Standard.startingPosition
+
   def captureDirs = Standard.captureDirs
   def moveDirsColor = Standard.moveDirsColor
   def moveDirsAll = Standard.moveDirsAll
