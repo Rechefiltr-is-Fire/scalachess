@@ -95,7 +95,7 @@ case object Frisian extends Variant(
     } withoutGhosts
   }
 
-  override def maxDrawingMoves(board: Board): Option[Int] =
+  def maxDrawingMoves(board: Board): Option[Int] =
     if (board.pieces.size <= 3 && board.roleCount(Man) == 0) {
       if (board.pieces.size == 3) Some(14)
       else Some(4)
@@ -106,11 +106,11 @@ case object Frisian extends Variant(
    * - When one player has two kings and the other one, the game is drawn after both players made 7 moves.
    * - When bother players have one king left, the game is drawn after both players made 2 moves.  The official rules state that the game is drawn immediately when both players have only one king left, unless either player can capture the other king immediately or will necessarily be able to do this next move.  In absence of a good way to distinguish the positions that win by force from those that don't, this rule is implemented on lidraughts by always allowing 2 more moves to win the game.
    */
-  override def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = {
+  def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = {
     val newHash = Hash(Situation(board, !move.piece.color))
     maxDrawingMoves(board) match {
       case Some(drawingMoves) =>
-        if (drawingMoves == 14 && move.captures)
+        if (drawingMoves == 14 && (move.captures || move.promotes))
           newHash // 7 move rule resets only when another piece disappears, activating the "2-move rule"
         else
           newHash ++ hash // 2 move rule never resets once activated

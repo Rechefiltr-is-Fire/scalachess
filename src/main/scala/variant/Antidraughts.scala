@@ -24,12 +24,12 @@ case object Antidraughts extends Variant(
   override def winner(situation: Situation): Option[Color] =
     if (situation.checkMate) Some(situation.color) else None
 
-  override def maxDrawingMoves(board: Board): Option[Int] = None
+  def maxDrawingMoves(board: Board): Option[Int] = None
 
   /**
    * Update position hashes for threefold repetition. Clear after non-kingmove, capture or promotion.
    */
-  override def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = {
+  def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = {
     val newHash = Hash(Situation(board, !move.piece.color))
     if (move.captures || move.piece.isNot(King) || move.promotes) newHash
     else newHash ++ hash

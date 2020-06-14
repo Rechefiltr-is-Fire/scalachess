@@ -26,8 +26,8 @@ case object Frysk extends Variant(
   override def validMoves(situation: Situation, finalSquare: Boolean = false): Map[Pos, List[Move]] = Frisian.validMoves(situation, finalSquare)
   override def finalizeBoard(board: Board, uci: format.Uci.Move, captured: Option[List[Piece]], situationBefore: Situation, finalSquare: Boolean): Board = Frisian.finalizeBoard(board, uci, captured, situationBefore, finalSquare)
 
-  override def maxDrawingMoves(board: Board): Option[Int] = Frisian.maxDrawingMoves(board)
-  override def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = Frisian.updatePositionHashes(board, move, hash)
+  def maxDrawingMoves(board: Board): Option[Int] = Frisian.maxDrawingMoves(board)
+  def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = Frisian.updatePositionHashes(board, move, hash)
 
   override protected def validSide(board: Board, strict: Boolean)(color: Color) = {
     val roles = board rolesOf color
