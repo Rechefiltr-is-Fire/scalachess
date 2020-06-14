@@ -97,6 +97,7 @@ case object Russian extends Variant(
   }
 
   private def innerLongRangeCaptures(buf: scala.collection.mutable.ArrayBuffer[Move], actor: Actor, initBoard: Board, initPos: PosMotion, initDir: Direction, finalSquare: Boolean, initFirstSquare: Option[PosMotion], initFirstBoard: Option[Board], initAllSquares: List[PosMotion], initAllTaken: List[PosMotion]): Int = {
+
     @tailrec
     def walkUntilCapture(walkDir: Direction, curBoard: Board, curPos: PosMotion, firstSquare: Option[PosMotion], firstBoard: Option[Board], allSquares: List[Pos], allTaken: List[Pos]): Int =
       walkDir._2(curPos) match {
@@ -129,7 +130,7 @@ case object Russian extends Variant(
       val extraCaptures = captureDirs.foldLeft(0) {
         case (total, captDir) =>
           if (captDir._1 == opposite) total
-          else walkUntilCapture(captDir, curBoard, curPos, Some(firstSquare.getOrElse(curPos)), Some(firstBoard.getOrElse(curBoard)), newSquares, newTaken)
+          else total + walkUntilCapture(captDir, curBoard, curPos, Some(firstSquare.getOrElse(curPos)), Some(firstBoard.getOrElse(curBoard)), newSquares, newTaken)
       }
       val moreExtraCaptures = walkDir._2(curPos) match {
         case Some(nextPos) =>

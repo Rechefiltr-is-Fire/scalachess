@@ -138,37 +138,36 @@ abstract class Variant private[variant] (
     var bestCaptureValue = 0
 
     def walkCaptures(walkDir: Direction, curBoard: Board, curPos: PosMotion, destPos: Option[PosMotion], destBoard: Option[Board], allSquares: List[Pos], allTaken: List[Pos], captureValue: Int): Unit =
-      walkDir._2(curPos).fold({}) {
-        nextPos =>
-          curBoard(nextPos) match {
-            case Some(captPiece) if captPiece.isNot(actor.color) && !captPiece.isGhost =>
-              walkDir._2(nextPos) match {
-                case Some(landingPos) if curBoard(landingPos).isEmpty =>
-                  curBoard.taking(curPos, landingPos, nextPos).foreach { boardAfter =>
-                    val newSquares = landingPos :: allSquares
-                    val newTaken = nextPos :: allTaken
-                    val newCaptureValue = captureValue + getCaptureValue(actor.board, nextPos)
-                    if (newCaptureValue > bestCaptureValue) {
-                      bestCaptureValue = newCaptureValue
-                      buf.clear()
-                    }
-                    if (newCaptureValue == bestCaptureValue) {
-                      if (finalSquare)
-                        buf += actor.move(landingPos, boardAfter.withoutGhosts, newSquares, newTaken)
-                      else
-                        buf += actor.move(destPos.getOrElse(landingPos), destBoard.getOrElse(boardAfter), newSquares, newTaken)
-                    }
-                    val opposite = Variant.oppositeDirs(walkDir._1)
-                    captureDirs.foreach {
-                      captDir =>
-                        if (captDir._1 != opposite)
-                          walkCaptures(captDir, boardAfter, landingPos, Some(destPos.getOrElse(landingPos)), Some(destBoard.getOrElse(boardAfter)), newSquares, newTaken, newCaptureValue)
-                    }
+      walkDir._2(curPos).foreach { nextPos =>
+        curBoard(nextPos) match {
+          case Some(captPiece) if captPiece.isNot(actor.color) && !captPiece.isGhost =>
+            walkDir._2(nextPos) match {
+              case Some(landingPos) if curBoard(landingPos).isEmpty =>
+                curBoard.taking(curPos, landingPos, nextPos).foreach { boardAfter =>
+                  val newSquares = landingPos :: allSquares
+                  val newTaken = nextPos :: allTaken
+                  val newCaptureValue = captureValue + getCaptureValue(actor.board, nextPos)
+                  if (newCaptureValue > bestCaptureValue) {
+                    bestCaptureValue = newCaptureValue
+                    buf.clear()
                   }
-                case _ => ()
-              }
-            case _ => ()
-          }
+                  if (newCaptureValue == bestCaptureValue) {
+                    if (finalSquare)
+                      buf += actor.move(landingPos, boardAfter.withoutGhosts, newSquares, newTaken)
+                    else
+                      buf += actor.move(destPos.getOrElse(landingPos), destBoard.getOrElse(boardAfter), newSquares, newTaken)
+                  }
+                  val opposite = Variant.oppositeDirs(walkDir._1)
+                  captureDirs.foreach {
+                    captDir =>
+                      if (captDir._1 != opposite)
+                        walkCaptures(captDir, boardAfter, landingPos, Some(destPos.getOrElse(landingPos)), Some(destBoard.getOrElse(boardAfter)), newSquares, newTaken, newCaptureValue)
+                  }
+                }
+              case _ => ()
+            }
+          case _ => ()
+        }
       }
 
     captureDirs.foreach {

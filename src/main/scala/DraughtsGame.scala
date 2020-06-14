@@ -21,7 +21,7 @@ case class DraughtsGame(
     partialCaptures: Boolean = false
   ): Valid[(DraughtsGame, Move)] =
     situation.move(orig, dest, promotion, finalSquare, None, captures, partialCaptures).map { fullMove =>
-      if (partialCaptures && finalSquare && fullMove.dest != dest && captures.exists(_.size > 1)) Some {
+      val gameWithMove = if (partialCaptures && finalSquare && fullMove.dest != dest && captures.exists(_.size > 1)) {
         val steps = captures.get.reverse
         val first = situation.move(
           from = orig,
@@ -46,14 +46,12 @@ case class DraughtsGame(
               }
           }
         }
-      } flatMap {
-        _.map {
-          case (g, m) =>
-            val fullSan = s"${orig.shortKey}x${dest.shortKey}"
-            g.copy(pdnMoves = g.pdnMoves.dropRight(captures.get.size) :+ fullSan) -> m.copy(orig = orig)
-        }
+      } else None
+      gameWithMove map {
+        case (g, m) =>
+          val fullSan = s"${orig.shortKey}x${dest.shortKey}"
+          g.copy(pdnMoves = g.pdnMoves.dropRight(captures.get.size) :+ fullSan) -> m.copy(orig = orig)
       } getOrElse apply(fullMove) -> fullMove
-      else apply(fullMove) -> fullMove
     }
 
   def apply(move: Move): DraughtsGame = apply(move, false)
