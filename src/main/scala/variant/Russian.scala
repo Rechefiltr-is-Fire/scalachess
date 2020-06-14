@@ -81,7 +81,7 @@ case object Russian extends Variant(
       }
 
     captureDirs.foreach {
-      walkCaptures(_, actor.board, actor.pos, None, None, Nil, Nil, None)
+      walkCaptures(_, actor.board, actor.pos, None, None, Nil, Nil)
     }
     buf.toList
   }
@@ -89,7 +89,7 @@ case object Russian extends Variant(
   override def longRangeCaptures(actor: Actor, finalSquare: Boolean): List[Move] = {
     val buf = new scala.collection.mutable.ArrayBuffer[Move]
     captureDirs.foreach {
-      innerLongRangeCaptures(buf, actor, actor.board, actor.pos, _, finalSquare, None, None, Nil, Nil)
+      innerLongRangeCaptures(buf, actor, actor.board, actor.pos, _, finalSquare, None, None, Nil, Nil, None)
     }
     buf.toList
   }
