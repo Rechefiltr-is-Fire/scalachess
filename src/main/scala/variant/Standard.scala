@@ -24,14 +24,14 @@ case object Standard extends Variant(
   def maxDrawingMoves(board: Board): Option[Int] =
     drawingMoves(board, None).map(_._1)
 
-  // (drawingMoves, first promotion: this move promotes and has only one king)
+  // (drawingMoves, first promotion: promotes this turn and has only one king)
   private def drawingMoves(board: Board, move: Option[Move]): Option[(Int, Boolean)] =
     if (board.pieces.size <= 4) {
       val whitePieces = board.piecesOf(Color.White)
       val blackPieces = board.piecesOf(Color.Black)
       val whiteKings = whitePieces.count(_._2.role == King)
       val blackKings = blackPieces.count(_._2.role == King)
-      val firstPromotion = move.map { m => m.promotes && m.color.fold(whiteKings == 1, blackKings == 1) }
+      def firstPromotion = move.exists(m => m.promotes && m.color.fold(whiteKings == 1, blackKings == 1))
       val drawingMoves =
         if (whitePieces.size == 1 && whiteKings == 1) {
           if (blackKings == 0) 50
@@ -42,7 +42,7 @@ case object Standard extends Variant(
           else if (whitePieces.size <= 2) 10
           else 32
         } else 50
-      Some(drawingMoves, drawingMoves != 50 && firstPromotion.getOrElse(false))
+      Some(drawingMoves, drawingMoves != 50 && firstPromotion)
     } else Some(50, false)
 
   /**
@@ -58,7 +58,7 @@ case object Standard extends Variant(
       case Some((drawingMoves, firstPromotion)) =>
         if (drawingMoves == 50 && (move.captures || move.piece.isNot(King) || move.promotes))
           newHash // 25-move rule resets on capture or non-king move. promotion check is included to prevent that a move promoting a man is counted as a king move
-        else if (firstPromotion || drawingMoves == 32 && move.captures)
+        else if (firstPromotion || (drawingMoves == 32 && move.captures))
           newHash // 16 and 5 move reset on first promotion, so that this move is not counted as the first. 16 move rule resets when another piece disappears, activating the 5-move rule
         else
           newHash ++ hash // 5 move rule never resets once activated

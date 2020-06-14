@@ -186,16 +186,17 @@ case object Russian extends Variant(
   }
 
   def maxDrawingMoves(board: Board): Option[Int] =
-    drawingMoves(board).map(_._1)
+    drawingMoves(board, None).map(_._1)
 
-  // (drawingMoves, resetOnNonKingMove, allowPromotion)
-  private def drawingMoves(board: Board): Option[(Int, Boolean, Boolean)] = {
+  // (drawingMoves, resetOnNonKingMove, allowPromotion, first promotion: promotes this turn and has only one king)
+  private def drawingMoves(board: Board, move: Option[Move]): Option[(Int, Boolean, Boolean, Boolean)] = {
     val whiteActors = board.actorsOf(Color.White)
     val blackActors = board.actorsOf(Color.Black)
     val whiteKings = whiteActors.count(_.piece is King)
     val blackKings = blackActors.count(_.piece is King)
     val whitePieces = whiteActors.size
     val blackPieces = blackActors.size
+    def firstPromotion = move.exists(m => m.promotes && m.color.fold(whiteKings == 1, blackKings == 1))
 
     def singleKing(strongPieces: Int, strongKings: Int, weakKing: Actor, weakColor: Color) = {
       // weak side:   pieces == 1, kings == 1
@@ -207,11 +208,11 @@ case object Russian extends Variant(
       //    7.2.4 => 15
       // strong side: kings >= 1
       //    7.2.5 => 15
-      if (strongPieces <= 2 && strongKings >= 1) Some(10, false, true) // 7.2.8
+      if (strongPieces <= 2 && strongKings >= 1) Some(10, false, true, firstPromotion) // 7.2.8: never reset, except on first promotion
       else if (strongPieces == 3 && strongKings >= 1 && weakKing.onLongDiagonal) {
-        if (board.history.kingMoves(weakColor) >= 10) Some(10, false, false) // 7.2.7: only draw after 5 kingmoves on the long diagonal have been recorded
-        else Some(30, false, true) // 7.2.7: right combination, awaiting 5th move, do not reset on promotion!
-      } else if (strongPieces >= 3 && strongKings == strongPieces) Some(30, false, false) // 7.2.4
+        if (board.history.kingMoves(weakColor) >= 10) Some(10, false, true, firstPromotion) // 7.2.7: only draw after 5 kingmoves on the long diagonal have been recorded
+        else Some(30, false, true, firstPromotion) // 7.2.7: right combination, awaiting 5th move, do not reset on promotion!
+      } else if (strongPieces >= 3 && strongKings == strongPieces) Some(30, false, false, false) // 7.2.4
       else None
     }
     val singleKingDraw =
@@ -221,17 +222,13 @@ case object Russian extends Variant(
         singleKing(whitePieces, whiteKings, blackActors.head, Color.black)
       } else None
 
-    val drawingRule =
-      if (singleKingDraw.isDefined) singleKingDraw
-      else if (blackKings >= 1 && whiteKings >= 1) {
-        val totalPieces = blackPieces + whitePieces
-        if (totalPieces == 6 || totalPieces == 7) Some(60, false, false) // 7.2.6: "4-and 5-pieces endings"
-        else if (totalPieces == 4 || totalPieces == 5) Some(30, false, false) // 7.2.6: "6, and 7-pieces endings"
-        else None
-      } else None
-
-    if (drawingRule.isDefined) drawingRule
-    else Some(30, true, false) // 7.2.5: "the players made ​​moves only kings without moving of men"
+    if (singleKingDraw.isDefined) singleKingDraw
+    else if (blackKings >= 1 && whiteKings >= 1) {
+      val totalPieces = blackPieces + whitePieces
+      if (totalPieces == 6 || totalPieces == 7) Some(60, false, false, false) // 7.2.6: "4-and 5-pieces endings"
+      else if (totalPieces == 4 || totalPieces == 5) Some(30, false, false, false) // 7.2.6: "6, and 7-pieces endings"
+      else Some(30, true, false, false) // 7.2.5: "the players made ​​moves only kings without moving of men"
+    } else None
   }
 
   /**
@@ -249,11 +246,11 @@ case object Russian extends Variant(
    */
   def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = {
     val newHash = Hash(Situation(board, !move.piece.color))
-    drawingMoves(board) match {
-      case Some((drawingMoves, resetOnNonKingMove, allowPromotion)) =>
+    drawingMoves(board, Some(move)) match {
+      case Some((drawingMoves, resetOnNonKingMove, allowPromotion, firstPromotion)) =>
         if (drawingMoves == 30 && (move.captures || (!allowPromotion && move.promotes) || (resetOnNonKingMove && move.piece.isNot(King))))
           newHash // 7.2.4 + 7.2.5 + 7.2.6 reset on capture (by which 7.2.4 becomes 7.2.8), and 7.2.5 on non-king move. A promotion resets to exclude the move that generates 7.2.4 + 7.2.6 configs (and implies a moved man for 7.2.5)
-        else if (drawingMoves == 60 && (move.captures || move.promotes))
+        else if (firstPromotion || (drawingMoves == 60 && (move.captures || move.promotes)))
           newHash // 7.2.6 resets on capture or promotion (30 move case overlaps with previous condition)
         else // 7.2.7 is unclear - we count total moves on long diagonal from start of piece configuration, so reentering long diagonal enough times before ply 30 still draws (leaving the diagonal is dumb anyway)
           newHash ++ hash // 7.2.8 never resets once activated
