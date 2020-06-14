@@ -100,7 +100,8 @@ case class Actor(
     /** Chained captures (1x2x3) */
     capture: List[Pos],
     /** Pieces taken from the board */
-    taken: List[Pos]
+    taken: List[Pos],
+    promotion: Option[PromotableRole] = None
   ) = Move(
     piece = piece,
     orig = pos,
@@ -108,6 +109,7 @@ case class Actor(
     situationBefore = Situation(board, piece.color),
     after = after,
     capture = Some(capture),
-    taken = Some(taken)
+    taken = Some(taken),
+    promotion = promotion
   )
 }
