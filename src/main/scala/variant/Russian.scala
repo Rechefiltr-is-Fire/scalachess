@@ -223,8 +223,8 @@ case object Russian extends Variant(
     if (singleKingDraw.isDefined) singleKingDraw
     else if (blackKings >= 1 && whiteKings >= 1) {
       val totalPieces = blackPieces + whitePieces
-      if (totalPieces == 6 || totalPieces == 7) Some(60, false, false, false) // 7.2.6: "4-and 5-pieces endings"
-      else if (totalPieces == 4 || totalPieces == 5) Some(30, false, false, false) // 7.2.6: "6, and 7-pieces endings"
+      if (totalPieces == 6 || totalPieces == 7) Some(120, false, false, false) // 7.2.6: "6-and 7-pieces endings"
+      else if (totalPieces == 4 || totalPieces == 5) Some(60, false, false, false) // 7.2.6: "4, and 5-pieces endings"
       else Some(30, true, false, false) // 7.2.5: "the players made ​​moves only kings without moving of men"
     } else None
   }
@@ -247,9 +247,9 @@ case object Russian extends Variant(
     drawingMoves(board, Some(move)) match {
       case Some((drawingMoves, resetOnNonKingMove, allowPromotion, firstPromotion)) =>
         if (drawingMoves == 30 && (move.captures || (!allowPromotion && move.promotes) || (resetOnNonKingMove && move.piece.isNot(King))))
-          newHash // 7.2.4 + 7.2.5 + 7.2.6 reset on capture (by which 7.2.4 becomes 7.2.8), and 7.2.5 on non-king move. A promotion resets to exclude the move that generates 7.2.4 + 7.2.6 configs (and implies a moved man for 7.2.5)
-        else if (firstPromotion || (drawingMoves == 60 && (move.captures || move.promotes)))
-          newHash // 7.2.6 resets on capture or promotion (30 move case overlaps with previous condition)
+          newHash // 7.2.4 + 7.2.5 reset on capture (by which 7.2.4 becomes 7.2.8), and 7.2.5 on non-king move. A promotion resets to exclude the move that generates 7.2.4 (and implies a moved man for 7.2.5)
+        else if (firstPromotion || (drawingMoves >= 60 && (move.captures || move.promotes)))
+          newHash // 7.2.6 resets on capture or promotion
         else // 7.2.7 is unclear - we count total moves on long diagonal from start of piece configuration, so reentering long diagonal enough times before ply 30 still draws (leaving the diagonal is dumb anyway)
           newHash ++ hash // 7.2.8 never resets once activated
       case _ => newHash
