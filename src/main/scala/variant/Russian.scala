@@ -18,8 +18,8 @@ case object Russian extends Variant(
   val pieces = Variant.symmetricThreeRank(Vector(Man, Man, Man, Man), boardSize)
   val initialFen = "W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12:H0:F1"
   val startingPosition = StartingPosition("---", initialFen, "", Some("Initial position"))
-  override val openings = OpeningTable.categoriesIDF
-  override val openingTables = List(OpeningTable.tableIDF)
+  override val openings = OpeningTable.categoriesFMJD
+  override val openingTables = List(OpeningTable.tableFMJD)
 
   def captureDirs = Standard.captureDirs
   def moveDirsColor = Standard.moveDirsColor
@@ -250,6 +250,8 @@ case object Russian extends Variant(
           newHash // 7.2.4 + 7.2.5 reset on capture (by which 7.2.4 becomes 7.2.8), and 7.2.5 on non-king move. A promotion resets to exclude the move that generates 7.2.4 (and implies a moved man for 7.2.5)
         else if (firstPromotion || (drawingMoves >= 60 && (move.captures || move.promotes)))
           newHash // 7.2.6 resets on capture or promotion
+        else if (drawingMoves == 10 && move.captures && board.pieces.size <= 3 && board.pieces.size + move.taken.map(_.size).getOrElse(1) > 3)
+          newHash // 7.2.8 does reset on the capture that creates the piece configuration
         else // 7.2.7 is unclear - we count total moves on long diagonal from start of piece configuration, so reentering long diagonal enough times before ply 30 still draws (leaving the diagonal is dumb anyway)
           newHash ++ hash // 7.2.8 never resets once activated
       case _ => newHash

@@ -94,6 +94,7 @@ case class DraughtsGame(
   def board = situation.board
 
   def isStandardInit = board.pieces == draughts.variant.Standard.pieces
+  def isInitial = board.pieces == board.variant.pieces
 
   def halfMoveClock: Int = board.history.halfMoveClock
 
