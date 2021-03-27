@@ -10,7 +10,7 @@ import scala.util.parsing.combinator._
 // https://pdn.fmjd.org/index.html
 object Parser {
 
-  case class StrMove(
+  private case class StrMove(
       san: String,
       glyphs: Glyphs,
       comments: List[String],
@@ -54,7 +54,7 @@ object Parser {
   def objMoves(strMoves: List[StrMove], variant: Variant): Valid[Sans] =
     strMoves.map {
       case StrMove(san, glyphs, comments, variations) => (
-        MoveParser(MovesParser.normalizedSan(san), variant) map { m =>
+        MoveParser(san, variant) map { m =>
           m withComments comments withVariations {
             variations.map { v =>
               objMoves(v, variant).fold(_ => Sans.empty, identity)
@@ -73,7 +73,7 @@ object Parser {
       if (loggingEnabled) log(p)(msg) else p
   }
 
-  object MovesParser extends RegexParsers with Logging {
+  private object MovesParser extends RegexParsers with Logging {
 
     override val whiteSpace = """(\s|\t|\r?\n)+""".r
 
@@ -93,26 +93,16 @@ object Parser {
       }
     }
 
-    //val moveRegex = """0\-0\-0|0\-0|[PQKRBNOoa-h@][QKRBNa-h1-8xOo\-=\+\#\@]{1,6}[\?!□]{0,2}""".r
-    val moveRegex = """(50|[1-4][0-9]|0?[1-9]|[a-h][1-8])[\-x:](50|[1-4][0-9]|0?[1-9]|[a-h][1-8])([x:](50|[1-4][0-9]|0?[1-9]|[a-h][1-8]))*[\?!□⨀]{0,2}""".r
+    import MoveParser.{ fieldR, suffR }
+    val moveRegex = s"""($fieldR)[\\-x:]($fieldR)([x:]($fieldR))*$suffR""".r
 
     def strMove: Parser[StrMove] = as("move") {
       ((number | commentary)*) ~>
         (moveRegex ~ nagGlyphs ~ rep(commentary) ~ nagGlyphs ~ rep(variation)) <~
         (moveExtras*) ^^ {
           case san ~ glyphs ~ comments ~ glyphs2 ~ variations =>
-            StrMove(normalizedSan(san.trim()), glyphs merge glyphs2, cleanComments(comments), variations)
+            StrMove(san.trim(), glyphs merge glyphs2, cleanComments(comments), variations)
         }
-    }
-
-    def normalizedSan(san: String) = {
-      val normCapture = if (san.contains(':')) san.replace(":", "x") else san
-      if (normCapture.contains('x')) {
-        val capts = normCapture.split('x')
-        if (capts.length > 2)
-          s"${capts.head}x${capts.last}"
-        else normCapture
-      } else normCapture
     }
 
     def number: Parser[String] = """[1-9]\d*\.+\s*""".r
@@ -156,35 +146,39 @@ object Parser {
 
   object MoveParser extends RegexParsers with Logging {
 
-    private val MoveR = """^(50|[1-4][0-9]|0?[1-9]|[a-h][1-8])(-|x)(50|[1-4][0-9]|0?[1-9]|[a-h][1-8])([\?!□⨀]{0,2})$""".r
+    val fieldR = """50|[1-4][0-9]|0?[1-9]|[a-h][1-8]"""
+    val suffR = """[\?!□⨀]{0,2}"""
+    private val SimpleMoveR = s"""^($fieldR)(-|x|:)($fieldR)($suffR)$$""".r
+    private val RepeatCaptureR = s"""^($fieldR)[x:]((?:$fieldR)(?:[x:](?:$fieldR))+)($suffR)$$""".r
 
-    def apply(str: String, variant: Variant): Valid[San] = {
-      str match {
-        case MoveR(srcR, cptR, dstR, suff) => {
-          val src = variant.boardSize.pos.posAt(srcR)
-          val dst = variant.boardSize.pos.posAt(dstR)
-          (src, dst) match {
-            case (Some(srcP), Some(dstP)) =>
-              val parseGlyphs = if (suff.isEmpty) Glyphs.empty
-              else parseAll(glyphs, suff) match {
-                case Success(glphs, _) => glphs
-                case _ => Glyphs.empty
-              }
-              draughts.success(Std(
-                src = srcP,
-                dest = dstP,
-                capture = cptR == "x",
-                metas = Metas(
-                  checkmate = false,
-                  comments = Nil,
-                  glyphs = parseGlyphs,
-                  variations = Nil
-                )
-              ))
-            case _ => draughts.failure(s"Cannot parse fields: $srcR($cptR)$dstR")
+    def apply(str: String, variant: Variant): Valid[San] = str match {
+      case SimpleMoveR(src, sep, dst, suff) =>
+        stdIfValid(variant, List(src, dst), sep != "-", suff)
+      case RepeatCaptureR(src, rest, suff) =>
+        stdIfValid(variant, src :: rest.split("x|:").toList, true, suff);
+      case _ => draughts.failure(s"Cannot parse move: $str")
+    }
+
+    private def stdIfValid(variant: Variant, fields: List[String], capture: Boolean, suff: String) = {
+      val posList = fields.flatMap(variant.boardSize.pos.posAt(_))
+      if (posList.length < 2 || posList.length != fields.length) draughts.failure(s"Cannot parse fields: $fields")
+      else {
+        val parsedGlyphs =
+          if (suff.isEmpty) Glyphs.empty
+          else parseAll(glyphs, suff) match {
+            case Success(glphs, _) => glphs
+            case _ => Glyphs.empty
           }
-        }
-        case _ => draughts.failure(s"Cannot parse move: $str")
+          draughts.success(Std(
+            fields = posList,
+            capture = capture,
+            metas = Metas(
+              checkmate = false,
+              comments = Nil,
+              glyphs = parsedGlyphs,
+              variations = Nil
+            )
+          ))
       }
     }
 
