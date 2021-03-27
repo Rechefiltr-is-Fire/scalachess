@@ -4,7 +4,7 @@ import format.{ pdn, Uci }
 
 case class DraughtsGame(
     situation: Situation,
-    pdnMoves: Vector[String] = Vector(),
+    pdnMoves: Vector[String] = Vector.empty[String],
     clock: Option[Clock] = None,
     /**turns means plies here*/
     turns: Int = 0,
@@ -105,6 +105,27 @@ case class DraughtsGame(
   def fullMoveNumber: Int = 1 + turns / 2
 
   def moveString = s"${fullMoveNumber}${player.fold(".", "...")}"
+
+  def pdnMovesConcat(fullCaptures: Boolean = false, dropGhosts: Boolean = false): Vector[String] = {
+    val movesConcat = pdnMoves.foldLeft(Vector.empty[String]) {
+      (moves, curMove) =>
+        if (moves.isEmpty) moves :+ curMove
+        else {
+          val curX = curMove.indexOf('x')
+          if (curX == -1) moves :+ curMove
+          else {
+            val lastMove = moves.last
+            val lastX = lastMove.lastIndexOf('x')
+            if (lastX != -1 && lastMove.takeRight(lastMove.length - lastX - 1) == curMove.take(curX)) {
+              val prefix = if (fullCaptures) lastMove else lastMove.take(lastX)
+              moves.dropRight(1) :+ (prefix + curMove.takeRight(curMove.length - curX))
+            } else moves :+ curMove
+          }
+        }
+    }
+    if (dropGhosts && situation.ghosts != 0) movesConcat.dropRight(1)
+    else movesConcat
+  }
 
   def withBoard(b: Board) = copy(situation = situation.copy(board = b))
 
