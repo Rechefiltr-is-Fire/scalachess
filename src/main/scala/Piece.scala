@@ -9,16 +9,14 @@ case class Piece(color: Color, role: Role) {
 
   def oneOf(rs: Set[Role]) = rs(role)
 
-  def isMinor = oneOf(Set(Man))
-  def isMajor = oneOf(Set(King))
   def isGhost = role == GhostMan || role == GhostKing
 
   def forsyth: Char = role.forsyth
 
   def ghostRole =
-    if (isGhost) role
-    else if (role == Man) GhostMan
-    else GhostKing
+    if (role == Man) GhostMan
+    else if (role == King) GhostKing
+    else role
 
   override def toString = (color + "-" + role).toLowerCase
 }

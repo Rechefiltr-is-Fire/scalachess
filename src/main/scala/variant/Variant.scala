@@ -134,6 +134,9 @@ abstract class Variant private[variant] (
       }
     else Some(m)
 
+  // HACKFIX: simply abort on * wet finger * 1600 cache entries - this should be enough for any practical game position, but may lead to incorrect dests in extreme frisian analysis (soit)
+  private val maxCache = 1600
+
   def shortRangeCaptures(actor: Actor, finalSquare: Boolean): List[Move] = {
     val buf = new scala.collection.mutable.ArrayBuffer[Move]
     var bestCaptureValue = 0
@@ -144,26 +147,27 @@ abstract class Variant private[variant] (
           case Some(captPiece) if captPiece.isNot(actor.color) && !captPiece.isGhost =>
             walkDir._2(nextPos) match {
               case Some(landingPos) if curBoard(landingPos).isEmpty =>
-                curBoard.taking(curPos, landingPos, nextPos).foreach { boardAfter =>
-                  val newSquares = landingPos :: allSquares
-                  val newTaken = nextPos :: allTaken
-                  val newCaptureValue = captureValue + getCaptureValue(actor.board, nextPos)
-                  if (newCaptureValue > bestCaptureValue) {
-                    bestCaptureValue = newCaptureValue
-                    buf.clear()
-                  }
-                  if (newCaptureValue == bestCaptureValue) {
-                    if (finalSquare)
-                      buf += actor.move(landingPos, boardAfter.withoutGhosts, newSquares, newTaken)
-                    else
-                      buf += actor.move(destPos.getOrElse(landingPos), destBoard.getOrElse(boardAfter), newSquares, newTaken)
-                  }
-                  val opposite = Variant.oppositeDirs(walkDir._1)
-                  captureDirs.foreach {
-                    captDir =>
-                      if (captDir._1 != opposite)
-                        walkCaptures(captDir, boardAfter, landingPos, Some(destPos.getOrElse(landingPos)), Some(destBoard.getOrElse(boardAfter)), newSquares, newTaken, newCaptureValue)
-                  }
+                val boardAfter = curBoard.takingUnsafe(curPos, landingPos, actor.piece, nextPos, captPiece)
+                val newSquares = landingPos :: allSquares
+                val newTaken = nextPos :: allTaken
+                val newCaptureValue = captureValue + getCaptureValue(actor.board, nextPos)
+                if (newCaptureValue > bestCaptureValue) {
+                  bestCaptureValue = newCaptureValue
+                  buf.clear()
+                }
+                if (newCaptureValue == bestCaptureValue) {
+                  if (finalSquare)
+                    buf += actor.move(landingPos, boardAfter.withoutGhosts, newSquares, newTaken)
+                  else
+                    buf += actor.move(destPos.getOrElse(landingPos), destBoard.getOrElse(boardAfter), newSquares, newTaken)
+                }
+                val opposite = Variant.oppositeDirs(walkDir._1)
+                val newDest = if (destPos.isDefined) destPos else Some(landingPos)
+                val newBoard = if (destBoard.isDefined) destBoard else Some(boardAfter)
+                captureDirs.foreach {
+                  captDir =>
+                    if (captDir._1 != opposite)
+                      walkCaptures(captDir, boardAfter, landingPos, newDest, newBoard, newSquares, newTaken, newCaptureValue)
                 }
               case _ => ()
             }
@@ -187,9 +191,8 @@ abstract class Variant private[variant] (
     var bestCaptureValue = 0
 
     // "transposition table", dramatically reduces calculation time for extreme frisian positions like W:WK50:B3,7,10,12,13,14,17,20,21,23,25,30,32,36,38,39,41,43,K47
+    // stop at maxCache entries because frisian can still max out CPU with e.g. W:WK5:BK2,K4,K7,K8,K9,K10,K11,K13,K15,K16,K18,K19,K20,K21,K22,K24,K27,K29,K30,K31,K32,K33,K35,K36,K38,K40,K41,K42,K43,K44,K47,K49
     val cacheExtraCapts = scala.collection.mutable.LongMap.empty[Int]
-    // apply hackfix to prevent extreme positions crashing the app
-    val maxCache = 1400
 
     @tailrec
     def walkUntilCapture(walkDir: Direction, curBoard: Board, curPos: PosMotion, destPos: Option[PosMotion], destBoard: Option[Board], allSquares: List[Pos], allTaken: List[Pos], captureValue: Int): Int =
@@ -198,21 +201,12 @@ abstract class Variant private[variant] (
         case Some(nextPos) =>
           curBoard(nextPos) match {
             case None =>
-              curBoard.move(curPos, nextPos) match {
-                case Some(boardAfter) =>
-                  walkUntilCapture(walkDir, boardAfter, nextPos, destPos, destBoard, allSquares, allTaken, captureValue)
-                case _ =>
-                  captureValue
-              }
+              walkUntilCapture(walkDir, curBoard.moveUnsafe(curPos, nextPos, actor.piece), nextPos, destPos, destBoard, allSquares, allTaken, captureValue)
             case Some(captPiece) if captPiece.isNot(actor.color) && !captPiece.isGhost =>
               walkDir._2(nextPos) match {
                 case Some(landingPos) if curBoard(landingPos).isEmpty =>
-                  curBoard.taking(curPos, landingPos, nextPos) match {
-                    case Some(boardAfter) =>
-                      walkAfterCapture(walkDir, boardAfter, landingPos, destPos, destBoard, allSquares, nextPos :: allTaken, captureValue + getCaptureValue(actor.board, nextPos))
-                    case _ =>
-                      captureValue
-                  }
+                  val boardAfter = curBoard.takingUnsafe(curPos, landingPos, actor.piece, nextPos, captPiece)
+                  walkAfterCapture(walkDir, boardAfter, landingPos, destPos, destBoard, allSquares, nextPos :: allTaken, captureValue + getCaptureValue(actor.board, nextPos))
                 case _ => captureValue
               }
             case _ => captureValue
@@ -241,24 +235,22 @@ abstract class Variant private[variant] (
               buf += actor.move(destPos.getOrElse(curPos), destBoard.getOrElse(curBoard), newSquares, newTaken)
           }
           val opposite = Variant.oppositeDirs(walkDir._1)
+          val newDest = if (destPos.isDefined) destPos else Some(curPos)
+          val newBoard = if (destBoard.isDefined) destBoard else Some(curBoard)
           var maxExtraCapts = 0
           captureDirs.foreach {
             captDir =>
               if (captDir._1 != opposite) {
-                val extraCapture = walkUntilCapture(captDir, curBoard, curPos, Some(destPos.getOrElse(curPos)), Some(destBoard.getOrElse(curBoard)), newSquares, newTaken, newCaptureValue) - newCaptureValue
+                val extraCapture = walkUntilCapture(captDir, curBoard, curPos, newDest, newBoard, newSquares, newTaken, newCaptureValue) - newCaptureValue
                 if (extraCapture > maxExtraCapts)
                   maxExtraCapts = extraCapture
               }
           }
           walkDir._2(curPos) match {
-            case Some(nextPos) =>
-              curBoard.move(curPos, nextPos) match {
-                case Some(boardAfter) =>
-                  val extraCapture = walkAfterCapture(walkDir, boardAfter, nextPos, destPos, destBoard, allSquares, newTaken, newCaptureValue) - newCaptureValue
-                  if (extraCapture > maxExtraCapts)
-                    maxExtraCapts = extraCapture
-                case _ =>
-              }
+            case Some(nextPos) if curBoard(nextPos).isEmpty =>
+              val extraCapture = walkAfterCapture(walkDir, curBoard.moveUnsafe(curPos, nextPos, actor.piece), nextPos, destPos, destBoard, allSquares, newTaken, newCaptureValue) - newCaptureValue
+              if (extraCapture > maxExtraCapts)
+                maxExtraCapts = extraCapture
             case _ =>
           }
           if (cachedExtraCapts.isEmpty)

@@ -79,26 +79,22 @@ case class Board(
   def move(orig: Pos, dest: Pos): Option[Board] =
     if (pieces contains dest) None
     else pieces get orig map { piece =>
-      copy(pieces = pieces - orig + ((dest, piece)))
+      copy(pieces = pieces - orig + (dest -> piece))
     }
 
-  def taking(orig: Pos, dest: Pos, taking: Pos): Option[Board] = for {
-    piece ← pieces get orig
-    if (pieces contains taking)
-    taken ← pieces get taking
-  } yield copy(pieces = pieces - taking - orig + (dest -> piece) + (taking -> Piece(taken.color, taken.ghostRole)))
+  def moveUnsafe(orig: Pos, dest: Pos, piece: Piece): Board =
+    copy(pieces = pieces - orig + (dest -> piece))
 
-  def move(orig: Pos) = new {
-    def to(dest: Pos): Valid[Board] = {
-      if (pieces contains dest) draughts.failure("Cannot move to occupied " + dest)
-      else pieces get orig map { piece =>
-        copy(pieces = pieces - orig + (dest -> piece))
-      } match {
-        case Some(v) => draughts.success(v)
-        case _ => draughts.failure("No piece at " + orig + " to move")
-      }
-    }
-  }
+  def taking(orig: Pos, dest: Pos, taking: Pos): Option[Board] =
+    if (pieces contains dest) None
+    else for {
+      piece ← pieces get orig
+      taken ← pieces get taking
+    } yield copy(pieces = pieces.updated(taking, Piece(taken.color, taken.ghostRole)) - orig + (dest -> piece))
+
+  def takingUnsafe(orig: Pos, dest: Pos, piece: Piece, taking: Pos, taken: Piece): Board =
+    copy(pieces = pieces.updated(taking, Piece(taken.color, taken.ghostRole)) - orig + (dest -> piece))
+
 
   lazy val occupation: Color.Map[Set[Pos]] = Color.Map { color =>
     pieces.collect { case (pos, piece) if piece is color => pos }(breakOut)

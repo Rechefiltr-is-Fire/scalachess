@@ -49,31 +49,32 @@ case object Russian extends Variant(
             case Some(captPiece) if captPiece.isNot(color) && !captPiece.isGhost =>
               walkDir._2(nextPos) match {
                 case Some(landingPos) if curBoard(landingPos).isEmpty =>
-                  curBoard.taking(curPos, landingPos, nextPos).fold(0) { newBoard =>
-                    val promotion = promotablePos(landingPos, color)
-                    val boardAfter = (if (promotion) newBoard.promote(landingPos) else None) getOrElse newBoard
-                    val promoted = if (promotion) Some(King) else None
-                    val newSquares = landingPos :: allSquares
-                    val newTaken = nextPos :: allTaken
-                    val opposite = Variant.oppositeDirs(walkDir._1)
-                    val extraCaptures = captureDirs.foldLeft(0) {
-                      case (total, captDir) =>
-                        if (captDir._1 == opposite) total
-                        else {
-                          total + (
-                            if (promotion) innerLongRangeCaptures(buf, actor, boardAfter, landingPos, captDir, finalSquare, Some(firstSquare.getOrElse(landingPos)), Some(firstBoard.getOrElse(boardAfter)), newSquares, newTaken, promoted)
-                            else walkCaptures(captDir, boardAfter, landingPos, Some(firstSquare.getOrElse(landingPos)), Some(firstBoard.getOrElse(boardAfter)), newSquares, newTaken)
-                          )
-                        }
-                    }
-                    if (extraCaptures == 0) {
-                      val newMove =
-                        if (finalSquare) actor.move(landingPos, boardAfter.withoutGhosts, newSquares, newTaken, promoted)
-                        else actor.move(firstSquare.getOrElse(landingPos), firstBoard.getOrElse(boardAfter), newSquares, newTaken, promoted)
-                      buf += newMove
-                    }
-                    extraCaptures + 1
+                  val takingBoard = curBoard.takingUnsafe(curPos, landingPos, actor.piece, nextPos, captPiece)
+                  val promotion = promotablePos(landingPos, color)
+                  val boardAfter = (if (promotion) takingBoard.promote(landingPos) else None) getOrElse takingBoard
+                  val promoted = if (promotion) Some(King) else None
+                  val newSquares = landingPos :: allSquares
+                  val newTaken = nextPos :: allTaken
+                  val opposite = Variant.oppositeDirs(walkDir._1)
+                  val newDest = if (firstSquare.isDefined) firstSquare else Some(landingPos)
+                  val newBoard = if (firstBoard.isDefined) firstBoard else Some(boardAfter)
+                  val extraCaptures = captureDirs.foldLeft(0) {
+                    case (total, captDir) =>
+                      if (captDir._1 == opposite) total
+                      else {
+                        total + (
+                          if (promotion) innerLongRangeCaptures(buf, actor, boardAfter, landingPos, captDir, finalSquare, newDest, newBoard, newSquares, newTaken, promoted)
+                          else walkCaptures(captDir, boardAfter, landingPos, newDest, newBoard, newSquares, newTaken)
+                        )
+                      }
                   }
+                  if (extraCaptures == 0) {
+                    val newMove =
+                      if (finalSquare) actor.move(landingPos, boardAfter.withoutGhosts, newSquares, newTaken, promoted)
+                      else actor.move(firstSquare.getOrElse(landingPos), firstBoard.getOrElse(boardAfter), newSquares, newTaken, promoted)
+                    buf += newMove
+                  }
+                  extraCaptures + 1
                 case _ => 0
               }
             case _ => 0
@@ -102,19 +103,12 @@ case object Russian extends Variant(
         case Some(nextPos) =>
           curBoard(nextPos) match {
             case None =>
-              curBoard.move(curPos, nextPos) match {
-                case Some(boardAfter) =>
-                  walkUntilCapture(walkDir, boardAfter, nextPos, firstSquare, firstBoard, allSquares, allTaken)
-                case _ => 0
-              }
+              walkUntilCapture(walkDir, curBoard.moveUnsafe(curPos, nextPos, actor.piece), nextPos, firstSquare, firstBoard, allSquares, allTaken)
             case Some(captPiece) if captPiece.isNot(actor.color) && !captPiece.isGhost =>
               walkDir._2(nextPos) match {
                 case Some(landingPos) if curBoard(landingPos).isEmpty =>
-                  curBoard.taking(curPos, landingPos, nextPos) match {
-                    case Some(boardAfter) =>
-                      walkAfterCapture(walkDir, boardAfter, landingPos, firstSquare, firstBoard, allSquares, nextPos :: allTaken, true, 0)
-                    case _ => 0
-                  }
+                  val boardAfter = curBoard.takingUnsafe(curPos, landingPos, actor.piece, nextPos, captPiece)
+                  walkAfterCapture(walkDir, boardAfter, landingPos, firstSquare, firstBoard, allSquares, nextPos :: allTaken, true, 0)
                 case _ => 0
               }
             case _ => 0
@@ -125,18 +119,16 @@ case object Russian extends Variant(
     def walkAfterCapture(walkDir: Direction, curBoard: Board, curPos: PosMotion, firstSquare: Option[PosMotion], firstBoard: Option[Board], allSquares: List[Pos], newTaken: List[Pos], justTaken: Boolean, currentCaptures: Int): Int = {
       val newSquares = curPos :: allSquares
       val opposite = Variant.oppositeDirs(walkDir._1)
+      val newDest = if (firstSquare.isDefined) firstSquare else Some(curPos)
+      val newBoard = if (firstBoard.isDefined) firstBoard else Some(curBoard)
       val extraCaptures = captureDirs.foldLeft(0) {
         case (total, captDir) =>
           if (captDir._1 == opposite) total
-          else total + walkUntilCapture(captDir, curBoard, curPos, Some(firstSquare.getOrElse(curPos)), Some(firstBoard.getOrElse(curBoard)), newSquares, newTaken)
+          else total + walkUntilCapture(captDir, curBoard, curPos, newDest, newBoard, newSquares, newTaken)
       }
       val moreExtraCaptures = walkDir._2(curPos) match {
-        case Some(nextPos) =>
-          curBoard.move(curPos, nextPos) match {
-            case Some(boardAfter) =>
-              walkAfterCapture(walkDir, boardAfter, nextPos, firstSquare, firstBoard, allSquares, newTaken, false, currentCaptures + extraCaptures)
-            case _ => 0
-          }
+        case Some(nextPos) if curBoard(nextPos).isEmpty =>
+          walkAfterCapture(walkDir, curBoard.moveUnsafe(curPos, nextPos, actor.piece), nextPos, firstSquare, firstBoard, allSquares, newTaken, false, currentCaptures + extraCaptures)
         case _ => 0
       }
       val totalCaptures = currentCaptures + extraCaptures + moreExtraCaptures
