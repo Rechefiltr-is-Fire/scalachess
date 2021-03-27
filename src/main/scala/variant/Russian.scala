@@ -188,8 +188,8 @@ case object Russian extends Variant(
 
   // (drawingMoves, resetOnNonKingMove, allowPromotion, first promotion: promotes this turn and has only one king)
   private def drawingMoves(board: Board, move: Option[Move]): Option[(Int, Boolean, Boolean, Boolean)] = {
-    val whiteActors = board.actorsOf(Color.White)
-    val blackActors = board.actorsOf(Color.Black)
+    val whiteActors = board.actorsOf(Color.White).filterNot(_.piece.isGhost)
+    val blackActors = board.actorsOf(Color.Black).filterNot(_.piece.isGhost)
     val whiteKings = whiteActors.count(_.piece is King)
     val blackKings = blackActors.count(_.piece is King)
     val whitePieces = whiteActors.size
@@ -225,7 +225,7 @@ case object Russian extends Variant(
       val totalPieces = blackPieces + whitePieces
       if (totalPieces == 6 || totalPieces == 7) Some(120, false, false, false) // 7.2.6: "6-and 7-pieces endings"
       else if (totalPieces == 4 || totalPieces == 5) Some(60, false, false, false) // 7.2.6: "4, and 5-pieces endings"
-      else Some(30, true, false, false) // 7.2.5: "the players made ​​moves only kings without moving of men"
+      else Some(30, true, false, false) // 7.2.5: "the players made 15 ​​moves only kings without moving of men"
     } else None
   }
 
@@ -234,7 +234,7 @@ case object Russian extends Variant(
    * 7.2.3. If three (or more) times the same position is repeated, and each time the same player having to move.
    * 7.2.4. If a player has three kings (or more) against a single enemy king, the game is drawn if his 15th move does not capture the enemy king
    *        (counting from the time of establishing the correlation of forces).
-   * 7.2.5. If within 15 moves the players made ​​moves only kings without moving of men and not making the capture.
+   * 7.2.5. If within 15 moves the players made moves only kings without moving of men and not making the capture.
    * 7.2.6. If the position in which the both opponents having kings have not changed the balance of pieces (ie, there was no capture and man did not become a king) for:
    *          – To 4-and 5-pieces endings – 30 moves;
    *          – In 6, and 7-pieces endings – 60 moves.
@@ -250,10 +250,13 @@ case object Russian extends Variant(
           newHash // 7.2.4 + 7.2.5 reset on capture (by which 7.2.4 becomes 7.2.8), and 7.2.5 on non-king move. A promotion resets to exclude the move that generates 7.2.4 (and implies a moved man for 7.2.5)
         else if (firstPromotion || (drawingMoves >= 60 && (move.captures || move.promotes)))
           newHash // 7.2.6 resets on capture or promotion
-        else if (drawingMoves == 10 && move.captures && board.pieces.size <= 3 && board.pieces.size + move.taken.map(_.size).getOrElse(1) > 3)
-          newHash // 7.2.8 does reset on the capture that creates the piece configuration
-        else // 7.2.7 is unclear - we count total moves on long diagonal from start of piece configuration, so reentering long diagonal enough times before ply 30 still draws (leaving the diagonal is dumb anyway)
-          newHash ++ hash // 7.2.8 never resets once activated
+        else {
+          def piecesBefore = board.pieces.count(!_._2.isGhost) + Math.max(board.ghosts, move.taken.map(_.size).getOrElse(0))
+          if (drawingMoves == 10 && move.captures && board.pieces.count(!_._2.isGhost) <= 3 && piecesBefore > 3)
+            newHash // 7.2.8 does reset on the capture that creates the piece configuration
+          else // 7.2.7 is unclear - we count total moves on long diagonal from start of piece configuration, so reentering long diagonal enough times before ply 30 still draws (leaving the diagonal is dumb anyway)
+            newHash ++ hash // 7.2.8 never resets once activated
+        }
       case _ => newHash
     }
   }

@@ -27,8 +27,8 @@ case object Standard extends Variant(
   // (drawingMoves, first promotion: promotes this turn and has only one king)
   private def drawingMoves(board: Board, move: Option[Move]): Option[(Int, Boolean)] =
     if (board.pieces.size <= 4) {
-      val whitePieces = board.piecesOf(Color.White)
-      val blackPieces = board.piecesOf(Color.Black)
+      val whitePieces = board.pieces filter { p => !p._2.isGhost && p._2.is(Color.White) }
+      val blackPieces = board.pieces filter { p => !p._2.isGhost && p._2.is(Color.Black) }
       val whiteKings = whitePieces.count(_._2.role == King)
       val blackKings = blackPieces.count(_._2.role == King)
       def firstPromotion = move.exists(m => m.promotes && m.color.fold(whiteKings == 1, blackKings == 1))
@@ -58,10 +58,15 @@ case object Standard extends Variant(
       case Some((drawingMoves, firstPromotion)) =>
         if (drawingMoves == 50 && (move.captures || move.piece.isNot(King) || move.promotes))
           newHash // 25-move rule resets on capture or non-king move. promotion check is included to prevent that a move promoting a man is counted as a king move
-        else if (firstPromotion || (drawingMoves == 32 && move.captures))
-          newHash // 16 and 5 move reset on first promotion, so that this move is not counted as the first. 16 move rule resets when another piece disappears, activating the 5-move rule
-        else
-          newHash ++ hash // 5 move rule never resets once activated
+         else {
+          def piecesBefore = board.pieces.count(!_._2.isGhost) + Math.max(board.ghosts, move.taken.map(_.size).getOrElse(0))
+          if (firstPromotion ||
+            (drawingMoves == 10 && move.captures && piecesBefore > 3) ||
+            (drawingMoves == 32 && move.captures && piecesBefore > 4))
+              newHash // 16 and 5 move reset on promotion or capture that create the material situation, so that this move is not counted as the first
+          else
+            newHash ++ hash // 5 move rule never resets once activated
+         }
       case _ => newHash
     }
   }

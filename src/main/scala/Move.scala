@@ -32,8 +32,10 @@ case class Move(
       h1.copy(lastMove = Some(toUci))
     }
 
-    board.variant.finalizeBoard(board, toUci, taken flatMap before.apply, situationBefore, finalSquare) updateHistory { h =>
-      // Update position hashes last, only after updating the board,
+    val finalized = board.variant.finalizeBoard(board, toUci, taken flatMap before.apply, situationBefore, finalSquare)
+    if (finalized.ghosts != 0) finalized
+    else finalized updateHistory { h =>
+      // Update position hashes last, only after updating the board, and when capture is complete
       h.copy(positionHashes = board.variant.updatePositionHashes(board, this, h.positionHashes))
     }
   }

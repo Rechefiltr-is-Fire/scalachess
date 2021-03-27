@@ -130,8 +130,8 @@ case class Board(
   def count(c: Color): Int = pieces.values count (_.color == c)
 
   def piecesOnLongDiagonal = actors.values.count(_.onLongDiagonal)
-  
-  def autoDraw: Boolean = variant.maxDrawingMoves(this).fold(false)(m => history.halfMoveClock >= m)
+
+  def autoDraw: Boolean = ghosts == 0 && variant.maxDrawingMoves(this).fold(false)(m => history.halfMoveClock >= m)
 
   def situationOf(color: Color) = Situation(this, color)
 

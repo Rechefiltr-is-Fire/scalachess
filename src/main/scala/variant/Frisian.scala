@@ -95,11 +95,13 @@ case object Frisian extends Variant(
     } withoutGhosts
   }
 
-  def maxDrawingMoves(board: Board): Option[Int] =
-    if (board.pieces.size <= 3 && board.roleCount(Man) == 0) {
-      if (board.pieces.size == 3) Some(14)
+  def maxDrawingMoves(board: Board): Option[Int] = {
+    val remainingPieces = board.pieces.count(!_._2.isGhost)
+    if (remainingPieces <= 3 && board.roleCount(Man) == 0) {
+      if (remainingPieces == 3) Some(14)
       else Some(4)
     } else None
+  }
 
   /**
    * Update position hashes for frisian drawing rules:
@@ -110,7 +112,7 @@ case object Frisian extends Variant(
     val newHash = Hash(Situation(board, !move.piece.color))
     maxDrawingMoves(board) match {
       case Some(drawingMoves) =>
-        if (drawingMoves == 14 && (move.captures || move.promotes))
+        if (move.captures || move.promotes)
           newHash // 7 move rule resets only when another piece disappears, activating the "2-move rule"
         else
           newHash ++ hash // 2 move rule never resets once activated
