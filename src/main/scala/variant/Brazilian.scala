@@ -33,7 +33,7 @@ case object Brazilian extends Variant(
       val whitePieces = whiteActors.size
       val blackPieces = blackActors.size
       def loneKing(strongPieces: Int, strongKings: Int, weakKing: Actor) =
-        strongPieces == 3 && strongKings >= 1 && weakKing.onLongDiagonal
+        strongPieces == 3 && strongKings >= 1 && weakKing.onLongDiagonal && board.piecesOnLongDiagonal == 1
       val whiteLoneKing =
         if (whiteKings == 1 && whitePieces == 1 && blackKings >= 1) {
           loneKing(blackPieces, blackKings, whiteActors.head)

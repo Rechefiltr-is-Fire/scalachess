@@ -164,7 +164,7 @@ case object Russian extends Variant(
       val whitePieces = whiteActors.size
       val blackPieces = blackActors.size
       def loneKing(strongPieces: Int, strongKings: Int, weakKing: Actor) =
-        strongPieces == 3 && strongKings >= 1 && weakKing.onLongDiagonal
+        strongPieces == 3 && strongKings >= 1 && weakKing.onLongDiagonal && board.piecesOnLongDiagonal == 1
       val whiteLoneKing =
         if (whiteKings == 1 && whitePieces == 1 && blackKings >= 1) {
           loneKing(blackPieces, blackKings, whiteActors.head)
@@ -207,7 +207,7 @@ case object Russian extends Variant(
       // strong side: kings >= 1
       //    7.2.5 => 15
       if (strongPieces <= 2 && strongKings >= 1) Some(10, false, true, firstPromotion) // 7.2.8: never reset, except on first promotion
-      else if (strongPieces == 3 && strongKings >= 1 && weakKing.onLongDiagonal) {
+      else if (strongPieces == 3 && strongKings >= 1 && weakKing.onLongDiagonal && board.piecesOnLongDiagonal == 1) {
         if (board.history.kingMoves(weakColor) >= 10) Some(10, false, true, firstPromotion) // 7.2.7: only draw after 5 kingmoves on the long diagonal have been recorded
         else Some(30, false, true, firstPromotion) // 7.2.7: right combination, awaiting 5th move, do not reset on promotion!
       } else if (strongPieces >= 3 && strongKings == strongPieces) Some(30, false, false, false) // 7.2.4

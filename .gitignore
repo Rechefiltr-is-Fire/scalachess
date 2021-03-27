@@ -7,3 +7,9 @@ target
 /.project
 /.settings/
 .idea
+
+# auto-generated vscode files
+.bloop
+.metals
+.vscode
+project/metals.sbt
