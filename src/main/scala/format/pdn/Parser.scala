@@ -89,7 +89,13 @@ object Parser {
 
     def strMoves: Parser[(InitialPosition, List[StrMove], Option[String])] = as("moves") {
       (commentary*) ~ (strMove*) ~ (result?) ~ (commentary*) ^^ {
-        case coms ~ sans ~ res ~ _ => (InitialPosition(cleanComments(coms)), sans, res)
+        case coms ~ sans ~ res ~ _ => {
+          val init = InitialPosition(cleanComments(coms))
+          val drawMove = res.isEmpty && sans.lastOption.exists(_.san == "1-1")
+          val sans2 = if (drawMove) sans.dropRight(1) else sans
+          val res2 = if (drawMove) Some("1-1") else res
+          (init, sans2, res2)
+        }
       }
     }
 
