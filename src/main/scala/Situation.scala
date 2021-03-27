@@ -25,7 +25,7 @@ case class Situation(board: Board, color: Color) {
     }
 
   lazy val allAmbiguities: Int =
-    board.variant.validMoves(this, true).filter(posMoves =>
+    validMovesFinal.filter(posMoves =>
       posMoves._2.lengthCompare(1) > 0 && posMoves._2.exists(_.capture.fold(false)(_.lengthCompare(1) > 0))).foldLeft(0) {
       (ambs, pos) => ambs + calculateAmbiguitiesFrom(pos._1, pos._2)
     }
