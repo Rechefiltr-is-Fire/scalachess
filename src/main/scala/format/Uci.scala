@@ -7,6 +7,9 @@ sealed trait Uci {
   def shortUci: String
   def piotr: String
 
+  def toSan: String
+  def toFullSan: String
+
   def origDest: (Pos, Pos)
 
   def apply(situation: Situation, finalSquare: Boolean = false): Valid[Move]
@@ -36,6 +39,10 @@ object Uci {
     def apply(situation: Situation, finalSquare: Boolean = false) = situation.move(orig, dest, promotion, finalSquare, None, capture)
 
     def toSan = s"${orig.shortKey}${if (capture.nonEmpty) "x" else "-"}${dest.shortKey}"
+    def toFullSan = {
+      val sep = if (capture.nonEmpty) "x" else "-"
+      orig.shortKey + sep + capture.fold(dest.shortKey)(_.reverse.map(_.shortKey) mkString sep)
+    }
 
   }
 

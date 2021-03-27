@@ -24,20 +24,18 @@ case class Situation(board: Board, color: Color) {
         Math.max(actor.captureLength, max)
     }
 
-  lazy val allAmbiguities: Int =
-    validMovesFinal.filter(posMoves =>
-      posMoves._2.lengthCompare(1) > 0 && posMoves._2.exists(_.capture.fold(false)(_.lengthCompare(1) > 0))).foldLeft(0) {
-      (ambs, pos) => ambs + calculateAmbiguitiesFrom(pos._1, pos._2)
-    }
-
-  def ambiguitiesFrom(pos: Pos): Int = calculateAmbiguitiesFrom(pos, movesFrom(pos, true))
-
   def ambiguitiesMove(move: Move): Int = ambiguitiesMove(move.orig, move.dest)
-  def ambiguitiesMove(orig: Pos, dest: Pos): Int = calculateAmbiguitiesFrom(orig, movesFrom(orig, true).filter(_.dest == dest))
+  def ambiguitiesMove(orig: Pos, dest: Pos): Int = countAmbiguities(movesFrom(orig, true).filter(_.dest == dest))
 
-  private def calculateAmbiguitiesFrom(pos: Pos, moves: List[Move]) =
+  private def countAmbiguities(moves: List[Move]) =
     moves.foldLeft(0) {
-      (ambs, m1) => ambs + (if (moves.exists(m2 => m1.capture.fold(None: Option[Pos])(_.headOption) == m2.capture.fold(None: Option[Pos])(_.headOption) && m1.situationAfter.board.pieces != m2.situationAfter.board.pieces)) 1 else 0)
+      (total, m1) =>
+        if (moves.exists { m2 =>
+            m1 != m2 &&
+              m1.dest == m2.dest &&
+              m1.situationAfter.board.pieces != m2.situationAfter.board.pieces
+          }) total + 1
+        else total
     }
 
   def movesFrom(pos: Pos, finalSquare: Boolean = false): List[Move] = board.variant.validMovesFrom(this, pos, finalSquare)
