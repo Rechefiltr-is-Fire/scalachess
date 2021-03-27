@@ -68,6 +68,12 @@ case class Move(
   def toUci = Uci.Move(orig, dest, promotion, capture)
   def toShortUci = Uci.Move(orig, dest, promotion, if (capture.isDefined) Some(capture.get.takeRight(1)) else None)
 
+  def toSan = s"${orig.shortKey}${if (capture.nonEmpty) "x" else "-"}${dest.shortKey}"
+  def toFullSan = {
+    val sep = if (capture.nonEmpty) "x" else "-"
+    orig.shortKey + sep + capture.fold(dest.shortKey)(_.reverse.map(_.shortKey) mkString sep)
+  }
+  
   def toScanMove =
     if (taken.isDefined) (List(orig.shortKey, dest.shortKey) ::: taken.get.reverse.map(_.shortKey)) mkString "x"
     else s"${orig.shortKey}-${dest.shortKey}"
