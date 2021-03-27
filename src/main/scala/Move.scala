@@ -17,13 +17,8 @@ case class Move(
   def before = situationBefore.board
 
   def situationAfter: Situation = situationAfter(false)
-  def situationAfter(finalSquare: Boolean): Situation = {
-    val newBoard = finalizeAfter(finalSquare)
-    if (newBoard.ghosts != 0)
-      Situation(newBoard, piece.color)
-    else
-      Situation(newBoard, !piece.color)
-  }
+  def situationAfter(finalSquare: Boolean): Situation =
+    Situation.withColorAfter(finalizeAfter(finalSquare), piece.color)
 
   def withHistory(h: DraughtsHistory) = copy(after = after withHistory h)
 

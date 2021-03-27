@@ -46,7 +46,7 @@ object Reader {
           san(replay.state.situation, iteratedCapts, if (ambs.isEmpty) None else Some(ambs.collect({ case (ambSan, ambUci) if ambSan == san => ambUci }))).fold(
             err => Result.Incomplete(replay, err),
             move => {
-              if (iteratedCapts && move.capture.fold(false)(_.lengthCompare(1) > 0) && move.situationBefore.ambiguitiesMove(move) > 0)
+              if (iteratedCapts && move.capture.fold(false)(_.length > 1) && move.situationBefore.ambiguitiesMove(move) > ambs.length + 1)
                 newAmb = Some((san -> move.toUci.uci))
               mk(replay.addMove(move, iteratedCapts), rest, if (newAmb.isDefined) newAmb.get :: ambs else ambs)
             }

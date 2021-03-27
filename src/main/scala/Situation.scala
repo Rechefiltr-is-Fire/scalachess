@@ -106,4 +106,8 @@ case class Situation(board: Board, color: Color) {
 object Situation {
 
   def apply(variant: draughts.variant.Variant): Situation = Situation(Board init variant, White)
+
+  def withColorAfter(board: Board, colorBefore: Color): Situation =
+    if (board.ghosts == 0) Situation(board, !colorBefore)
+    else Situation(board, colorBefore)
 }
