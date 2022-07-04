@@ -7,7 +7,7 @@ case object Atoms extends Variant(
   key = "atoms",
   name = "Atoms",
   shortName = "Atom",
-  title = "Pieces are exploding where capture.",
+  title = "Pieces are exploding when capture.",
   standardInitialPosition = true,
   boardSize = Board.D100
 ) {
