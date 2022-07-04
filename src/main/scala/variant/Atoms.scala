@@ -52,11 +52,7 @@ case object Atoms extends Variant(
     else if (situation.board.kingPosOf(Black).isDefined) Some(Black)
     else None
 
-  def maxDrawingMoves(board: Board): Option[Int] = None
-
-  /**
-   * No drawing rules
-   */
+  def maxDrawingMoves(board: Board): Option[Int] = Standard.maxDrawingMoves(board)
   def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash =
     Hash(Situation(board, !move.piece.color))
 
