@@ -31,6 +31,7 @@ abstract class Variant private[variant] (
   def frysk = this == Frysk
   def antidraughts = this == Antidraughts
   def breakthrough = this == Breakthrough
+  def atoms = this == Atoms
   def russian = this == Russian
   def brazilian = this == Brazilian
   def fromPosition = this == FromPosition
