@@ -1,7 +1,7 @@
 package draughts
 package variant
 
-case object Breakthrough extends Variant(
+case object Atoms extends Variant(
   id = 9,
   gameType = 96,
   key = "atoms",
@@ -20,7 +20,31 @@ case object Breakthrough extends Variant(
   def moveDirsColor = Standard.moveDirsColor
   def moveDirsAll = Standard.moveDirsAll
 
+  /** If the move captures, we explode the surrounding pieces. Otherwise, nothing explodes. */
+  private def explodeSurroundingPieces(move: Move): Move = {
+    if (move.captures) {
+      val affectedPos = surroundingPositions(move.dest)
+      val afterBoard  = move.after
+      val destination = move.dest
 
+      val boardPieces = afterBoard.pieces
+
+      // All pieces surrounding the captured piece and the capturing piece itself explode.
+      val piecesToExplode = affectedPos.filter(boardPieces.get(_).fold(false)) + destination
+      val afterExplosions = boardPieces -- piecesToExplode
+      
+      val newBoard = afterBoard withPieces afterExplosions
+      move withAfter newBoard
+    } else move
+  }
+
+  /** The positions surrounding a given position on the board. Any square at the edge of the board has
+    * less surrounding positions than the usual four.
+    */
+  private[chess] def surroundingPositions(pos: Pos): Set[Pos] =
+    Set(pos.upLeft, pos.upRight, pos.downLeft, pos.downRight).flatten
+
+  override def addVariantEffect(move: Move): Move = explodeSurroundingPieces(move)
 
   override def winner(situation: Situation): Option[Color] =
     if (situation.checkMate) Some(!situation.color)
