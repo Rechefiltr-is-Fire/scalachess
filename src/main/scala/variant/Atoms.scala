@@ -2,8 +2,8 @@ package draughts
 package variant
 
 case object Atoms extends Variant(
-  id = 9,
-  gameType = 96,
+  id = 13,
+  gameType = ?,
   key = "atoms",
   name = "Atoms",
   shortName = "Atom",
