@@ -53,7 +53,6 @@ case object Atoms extends Variant(
     else None
 
   def maxDrawingMoves(board: Board): Option[Int] = Standard.maxDrawingMoves(board)
-  def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash =
-    Hash(Situation(board, !move.piece.color))
+  def updatePositionHashes(board: Board, move: Move, hash: draughts.PositionHash): PositionHash = Standard.updatePositionHashes(board, move, hash)
 
 }
