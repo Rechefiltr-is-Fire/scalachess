@@ -1,5 +1,5 @@
 ThisBuild / organization      := "org.lichess"
-ThisBuild / version           := "15.6.11"
+ThisBuild / version           := "15.7.9"
 ThisBuild / scalaVersion      := "3.3.1"
 ThisBuild / licenses += "MIT" -> url("https://opensource.org/licenses/MIT")
 
@@ -29,9 +29,9 @@ lazy val scalachess: Project = Project("scalachess", file(".")).settings(
     "com.github.ornicar" %% "scalalib"       % "9.5.5",
     "org.typelevel"      %% "cats-core"      % "2.10.0",
     "org.typelevel"      %% "alleycats-core" % "2.10.0",
-    "org.typelevel"      %% "cats-parse"     % "0.3.10",
+    "org.typelevel"      %% "cats-parse"     % "1.0.0",
     "dev.optics"         %% "monocle-core"   % "3.2.0",
-    "org.typelevel"      %% "kittens"        % "3.1.0"
+    "org.typelevel"      %% "kittens"        % "3.2.0"
   )
 )
 
@@ -60,3 +60,6 @@ lazy val testKit = project
     testFrameworks += new TestFramework("weaver.framework.CatsEffect")
   )
   .dependsOn(scalachess % "compile->compile")
+
+addCommandAlias("fmtCheck", "all scalachess/scalafmtCheckAll bench/scalafmtCheckAll testKit/scalafmtCheckAll")
+addCommandAlias("fmt", "all scalachess/scalafmtAll bench/scalafmtAll testKit/scalafmtAll")

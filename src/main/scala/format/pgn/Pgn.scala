@@ -40,11 +40,16 @@ object PgnTree:
   extension (tree: Tree[Move])
     def isLong = tree.value.isLong || tree.variations.nonEmpty
 
-    def render(builder: StringBuilder): Unit =
+    def render: String =
+      val builder = new StringBuilder
+      render(builder)
+      builder.toString
+
+    private[pgn] def render(builder: StringBuilder): Unit =
       render(builder, !tree.value.ply.turn.black)
 
     @annotation.tailrec
-    def render(builder: StringBuilder, dot: Boolean): Unit =
+    private def render(builder: StringBuilder, dot: Boolean): Unit =
       if tree.isVariation then builder.append(Move.render(tree.value.variationComments))
       val d = tree.prefix(dot, builder)
       renderValueAndVariations(builder)
@@ -54,7 +59,7 @@ object PgnTree:
           builder.addOne(' ')
           x.render(builder, d)
 
-    def prefix(dot: Boolean, builder: StringBuilder): Boolean =
+    private def prefix(dot: Boolean, builder: StringBuilder): Boolean =
       if tree.value.ply.turn.black then
         builder.append(tree.value.turnNumber).append(". ")
         tree.isLong
@@ -62,7 +67,7 @@ object PgnTree:
         if dot then builder.append(tree.value.turnNumber).append("... ")
         false
 
-    def renderValueAndVariations(builder: StringBuilder) =
+    private def renderValueAndVariations(builder: StringBuilder) =
       tree.value.render(builder)
       tree.variations.foreach: x =>
         builder.addOne(' ').addOne('(')
@@ -100,7 +105,6 @@ case class Move(
     glyphs.toList.foreach:
       case glyph if glyph.id <= 6 => builder.append(glyph.symbol)
       case glyph                  => builder.append(" $").append(glyph.id)
-
     if hasCommentsOrTime then
       List(clockString, opening, result).flatten
         .:::(comments.map(_ map Move.noDoubleLineBreak))
