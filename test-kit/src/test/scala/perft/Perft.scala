@@ -1,14 +1,12 @@
 package chess
 package perft
 
-import chess.format.EpdFen
-import chess.variant.Chess960
-import chess.variant.Variant
-import chess.variant.Crazyhouse
-import MoveOrDrop.*
-import chess.format.Fen
+import chess.format.{ Fen, FullFen }
+import chess.variant.{ Chess960, Crazyhouse, Variant }
 
-case class Perft(id: String, epd: EpdFen, cases: List[TestCase]):
+import MoveOrDrop.*
+
+case class Perft(id: String, epd: FullFen, cases: List[TestCase]):
   import Perft.*
   def calculate(variant: Variant): List[Result] =
     val situation =

@@ -2,7 +2,9 @@ package chess
 package format.pgn
 
 import cats.syntax.option.*
+
 import scala.language.implicitConversions
+
 import Sans.*
 
 class ParserTest extends ChessTest:
@@ -146,7 +148,7 @@ class ParserTest extends ChessTest:
     parse(disambiguated).assertRight: a =>
       assertEquals(a.mainline.size, 3)
 
-  List(fromProd1, fromProd2, castleCheck1, castleCheck2) foreach { sans =>
+  List(fromProd1, fromProd2, castleCheck1, castleCheck2).foreach { sans =>
     val size = sans.split(' ').length
     test(s"sans only from prod size: $size"):
       parse(sans).assertRight: a =>

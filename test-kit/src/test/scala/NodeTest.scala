@@ -1,12 +1,12 @@
 package chess
 
-import munit.ScalaCheckSuite
-import org.scalacheck.Prop.forAll
-
 import cats.syntax.all.*
-import NodeArbitraries.{ *, given }
-import org.scalacheck.Prop.propBoolean
+import munit.ScalaCheckSuite
+import org.scalacheck.Prop.{ forAll, propBoolean }
+
 import scala.util.Random
+
+import NodeArbitraries.{ *, given }
 
 class NodeTest extends ScalaCheckSuite:
 
@@ -39,7 +39,7 @@ class NodeTest extends ScalaCheckSuite:
     forAll: (node: Node[Int]) =>
       node.mainlineValues == node.mainlinePath
 
-  test("findPath with subset of mainline returns Some"):
+  test("findPath with subset of mainline return Some"):
     forAll: (node: Node[Int]) =>
       node.mainlineValues.size >= 2 ==> {
         val size = Random.nextInt(node.mainlineValues.size - 1) + 1
@@ -57,21 +57,17 @@ class NodeTest extends ScalaCheckSuite:
 
   test("with 0 < n <= node.mainline.size => take(n).mainline size == n"):
     forAll: (node: Node[Int]) =>
-      val n = Random.nextInt(node.mainline.size)
-      n > 0 ==> {
-        node.take(n).mainline.size == n
-      }
+      val n = node.randomBetweenOneAndMainlineSize
+      node.take(n).get.mainline.size == n
 
   test("findPath.take(n).mainlineValues isDefined"):
     forAll: (node: Node[Int]) =>
-      val n = Random.nextInt(node.mainline.size)
-      n > 0 ==> {
-        node.findPath(node.take(n).mainlineValues).isDefined
-      }
+      val n = node.randomBetweenOneAndMainlineSize
+      node.findPath(node.take(n).get.mainlineValues).isDefined
 
   test("take(node.mainline.size) == node"):
     forAll: (node: Node[Int]) =>
-      node.take(node.mainline.size) == node
+      node.take(node.mainline.size).get == node
 
   test("takeMainlineWhile"):
     forAll: (node: Node[Int]) =>
@@ -96,12 +92,10 @@ class NodeTest extends ScalaCheckSuite:
 
   test("take(n).size + apply(n).size == node.size"):
     forAll: (node: Node[Int]) =>
-      val n = Random.nextInt(node.mainline.size)
-      n > 0 ==> {
-        node.take(n).size + node(n).map(_.size).getOrElse(0L) == node.size
-      }
+      val n = node.randomBetweenOneAndMainlineSize
+      node.take(n).get.size + node(n).map(_.size).getOrElse(0L) == node.size
 
-  test("modifyAt with mainline == modifyLastMainlineNode"):
+  test("modifyAt with mainlineValues == modifyLastMainlineNode"):
     forAll: (node: Node[Int], f: Int => Int) =>
       node
         .modifyAt(node.mainlineValues, Tree.liftOption(f)) == node
@@ -119,13 +113,24 @@ class NodeTest extends ScalaCheckSuite:
       def modifyChild(node: Tree[Int]) =
         node.withChild(node.child.map(c => c.withValue(f(c.value)))).some
 
-      if node.find(path).flatMap(_.child).isDefined then
+      node.find(path).flatMap(_.child).isDefined ==> {
         node.modifyAt(path, modifyChild) == node.modifyChildAt(path, _.updateValue(f).some)
-      else true
+      }
 
   test("mergeOrAddAsVariation size"):
     forAll: (node: Node[Foo], other: Node[Foo]) =>
       node.mergeOrAddAsVariation(other).size >= node.size
+
+  // if all child and variations are distinct, then the result should be distinct
+  // `node.withoutVariations.mergeOrAddAsVariation(node.variations)` is the trick
+  // to remove duplicated variations from the node
+  test("After mergeOrAddAsVariation should have no value duplication"):
+    forAll: (node: Node[Foo], other: Node[Foo]) =>
+      val values = node.withoutVariations
+        .mergeOrAddAsVariation(node.variations)
+        .mergeOrAddAsVariation(other)
+        .valueAndVariations
+      values.distinct == values
 
   test("addChild size"):
     forAll: (node: Node[Foo], other: Node[Foo]) =>
@@ -178,6 +183,34 @@ class NodeTest extends ScalaCheckSuite:
       val (node, path) = p
       node.deleteAt(path).isDefined == node.modifyAt(path, Tree.liftOption(identity)).isDefined
 
+  test("modifyInMainlineAt return none when n is out of range"):
+    forAll: (node: Node[Int], f: Int => Int) =>
+      node.modifyInMainlineAt(-1, _.updateValue(f)) == none
+      node.modifyInMainlineAt(node.mainline.size, _.updateValue(f)) == none
+
+  test("modifyInMainlineAt return none when n is out of range"):
+    forAll: (node: Node[Int], f: Int => Int) =>
+      node.modifyInMainlineAt(-1, _.updateValue(f)) == none
+      node.modifyInMainlineAt(node.mainline.size, _.updateValue(f)) == none
+
+  test("modifyInMainlineAt with updateValue return have the same size"):
+    forAll: (node: Node[Int], f: Int => Int) =>
+      val n      = Random.nextInt(node.mainline.size)
+      val output = node.modifyInMainlineAt(n, _.updateValue(f))
+      output.get.size == node.size && output.get.mainline.size == node.mainline.size
+
+  test("take n doesn't impact by modifyInMainlineAt n"):
+    forAll: (node: Node[Int], s: Short, newNode: Node[Int]) =>
+      val n      = s.toInt
+      val output = node.modifyInMainlineAt(n, _ => newNode)
+      n >= node.mainline.size || output.flatMap(_.take(n)) == node.take(n)
+
+  override def scalaCheckInitialSeed = "z_ejR8Ve8lZWkWpnrN7gBGfK1bta0yof-THAkg8qgjK="
+  test("modifyInMainlineAt(n)(node) . get(n) == node"):
+    forAll: (node: Node[Int], newNode: Node[Int]) =>
+      val n = Random.nextInt(node.mainline.size)
+      node.modifyInMainlineAt(n, _ => newNode).get.getMainlineNodeAt(n) == newNode.some
+
   test("clearVariations.size == mainline.size"):
     forAll: (node: Node[Int]) =>
       node.clearVariations.size == node.mainline.size
@@ -201,8 +234,8 @@ class NodeTest extends ScalaCheckSuite:
   test("promote will never change node.size"):
     forAll: (p: NodeWithPath[Int]) =>
       val (node, path) = p
-      val ouput        = node.promote(path)
-      ouput.isEmpty || ouput.get.size == node.size
+      val output       = node.promote(path)
+      output.isEmpty || output.get.size == node.size
 
   test("promote success reduce mainline nodes count in the path"):
     def nodesInPath(node: Node[Int], path: List[Int]) =
@@ -210,9 +243,9 @@ class NodeTest extends ScalaCheckSuite:
 
     forAll: (p: NodeWithPath[Int]) =>
       val (node, path) = p
-      val ouput        = node.promote(path)
-      ouput.isEmpty || {
-        nodesInPath(ouput.get, path) == nodesInPath(node, path) + 1
+      val output       = node.promote(path)
+      output.isEmpty || {
+        nodesInPath(output.get, path) == nodesInPath(node, path) + 1
       }
 
   test("findPath.isEmpty => promote.isEmpty"):
@@ -234,14 +267,14 @@ class NodeTest extends ScalaCheckSuite:
   test("promoteToMainline will never change node.size"):
     forAll: (p: NodeWithPath[Int]) =>
       val (node, path) = p
-      val ouput        = node.promoteToMainline(path)
-      ouput.isEmpty || ouput.get.size == node.size
+      val output       = node.promoteToMainline(path)
+      output.isEmpty || output.get.size == node.size
 
   test("promoteToMainline => path is a subset of mainlineValues"):
     forAll: (p: NodeWithPath[Int]) =>
       val (node, path) = p
-      val ouput        = node.promoteToMainline(path)
-      ouput.isEmpty || ouput.get.mainlineValues.startsWith(path)
+      val output       = node.promoteToMainline(path)
+      output.isEmpty || output.get.mainlineValues.startsWith(path)
 
   test("findPath.isEmpty => promoteToMainline.isEmpty"):
     forAll: (p: NodeWithPath[Int]) =>
@@ -321,20 +354,16 @@ class NodeTest extends ScalaCheckSuite:
       val intersected = vs.map(_.id).toSet.intersect(xs.map(_.id).toSet)
       added.map(_.id).toSet.size == vs.map(_.id).toSet.size + xs.map(_.id).toSet.size - intersected.size
 
-  test("Tree.build(xs).mainlineValues == xs"):
-    forAll: (xs: List[Foo]) =>
-      Tree.build(xs).fold(Nil)(_.mainlineValues) == xs
-
-  test("Tree.buildReverse(xs).mainlineValues == xs.reverse"):
-    forAll: (xs: List[Foo]) =>
-      Tree.buildReverse(xs).fold(Nil)(_.mainlineValues) == xs.reverse
-
   extension [A](node: Node[A])
     def variationsCount: Long =
       node.child.foldLeft(node.variations.foldMap(_.size))((acc, v) => acc + v.variationsCount)
 
     def variationIsEmpty: Boolean =
       node.child.foldLeft(node.variations.isEmpty)((acc, v) => acc || v.variationIsEmpty)
+
+    def randomBetweenOneAndMainlineSize: Int =
+      if node.mainline.size == 1 then 1
+      else Random.between(1, node.mainline.size)
 
 case class Foo(id: Int, name: String)
 

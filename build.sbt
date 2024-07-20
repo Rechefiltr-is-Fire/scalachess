@@ -1,17 +1,24 @@
-ThisBuild / organization      := "org.lichess"
-ThisBuild / version           := "15.7.9"
-ThisBuild / scalaVersion      := "3.3.1"
-ThisBuild / licenses += "MIT" -> url("https://opensource.org/licenses/MIT")
+inThisBuild(
+  Seq(
+    scalaVersion      := "3.4.2",
+    version           := "16.1.0",
+    organization      := "org.lichess",
+    licenses += ("MIT" -> url("https://opensource.org/licenses/MIT")),
+    publishTo         := Option(Resolver.file("file", new File(sys.props.getOrElse("publishTo", "")))),
+    semanticdbEnabled := true, // for scalafix
+    Compile / packageDoc / publishArtifact := false
+  )
+)
 
-ThisBuild / resolvers += "lila-maven" at "https://raw.githubusercontent.com/ornicar/lila-maven/master"
-ThisBuild / publishTo := Option(Resolver.file("file", new File(sys.props.getOrElse("publishTo", ""))))
+val scalalibVersion = "11.1.5"
 
 val commonSettings = Seq(
   scalacOptions := Seq(
     "-encoding",
     "utf-8",
-    "-source:future-migration",
-    "-indent",
+    "-rewrite",
+    "-source:3.4-migration",
+    // "-indent",
     "-feature",
     "-language:postfixOps",
     "-Wunused:all",
@@ -22,22 +29,36 @@ val commonSettings = Seq(
   )
 )
 
-lazy val scalachess: Project = Project("scalachess", file(".")).settings(
+lazy val scalachess: Project = Project("scalachess", file("core")).settings(
   commonSettings,
   name := "scalachess",
   libraryDependencies ++= List(
-    "com.github.ornicar" %% "scalalib"       % "9.5.5",
-    "org.typelevel"      %% "cats-core"      % "2.10.0",
-    "org.typelevel"      %% "alleycats-core" % "2.10.0",
-    "org.typelevel"      %% "cats-parse"     % "1.0.0",
-    "dev.optics"         %% "monocle-core"   % "3.2.0",
-    "org.typelevel"      %% "kittens"        % "3.2.0"
-  )
+    "org.lichess"   %% "scalalib-core"  % scalalibVersion,
+    "org.typelevel" %% "cats-core"      % "2.12.0",
+    "org.typelevel" %% "alleycats-core" % "2.12.0",
+    "org.typelevel" %% "cats-parse"     % "1.0.0",
+    "dev.optics"    %% "monocle-core"   % "3.2.0",
+    "org.typelevel" %% "kittens"        % "3.3.0"
+  ),
+  resolvers += "lila-maven".at("https://raw.githubusercontent.com/ornicar/lila-maven/master")
 )
+
+lazy val playJson: Project = Project("playJson", file("playJson"))
+  .settings(
+    commonSettings,
+    name := "scalachess-play-json",
+    libraryDependencies ++= List(
+      "org.playframework" %% "play-json"          % "3.0.4",
+      "org.lichess"       %% "scalalib-play-json" % scalalibVersion
+    )
+  )
+  .dependsOn(scalachess)
 
 lazy val bench = project
   .enablePlugins(JmhPlugin)
-  .settings(commonSettings, name := "bench")
+  .settings(commonSettings, scalacOptions -= "-Wunused:all", name := "bench")
+  .settings(publish := {}, publish / skip := true)
+  .disablePlugins(ScalafixPlugin)
   .dependsOn(scalachess, testKit, testKit % "compile->test")
 
 lazy val testKit = project
@@ -47,19 +68,23 @@ lazy val testKit = project
     commonSettings,
     name := "scalachess-test-kit",
     libraryDependencies ++= List(
-      "org.scalacheck"      %% "scalacheck"        % "1.17.0",
-      "org.scalameta"       %% "munit"             % "1.0.0-M8" % Test,
-      "org.scalameta"       %% "munit-scalacheck"  % "1.0.0-M8" % Test,
-      "com.disneystreaming" %% "weaver-cats"       % "0.8.3"    % Test,
-      "com.disneystreaming" %% "weaver-scalacheck" % "0.8.3"    % Test,
-      "co.fs2"              %% "fs2-core"          % "3.8.0"    % Test,
-      "co.fs2"              %% "fs2-io"            % "3.8.0"    % Test,
-      "org.typelevel"       %% "discipline-munit"  % "1.0.9"    % Test,
-      "org.typelevel"       %% "cats-laws"         % "2.9.0"    % Test
-    ),
-    testFrameworks += new TestFramework("weaver.framework.CatsEffect")
+      "org.scalacheck"      %% "scalacheck"        % "1.18.0",
+      "org.scalameta"       %% "munit"             % "1.0.0"  % Test,
+      "org.scalameta"       %% "munit-scalacheck"  % "1.0.0"  % Test,
+      "com.disneystreaming" %% "weaver-cats"       % "0.8.4"  % Test,
+      "com.disneystreaming" %% "weaver-scalacheck" % "0.8.4"  % Test,
+      "co.fs2"              %% "fs2-core"          % "3.10.2" % Test,
+      "co.fs2"              %% "fs2-io"            % "3.10.2" % Test,
+      "org.typelevel"       %% "discipline-munit"  % "2.0.0"  % Test,
+      "org.typelevel"       %% "cats-laws"         % "2.12.0" % Test
+    )
   )
   .dependsOn(scalachess % "compile->compile")
 
-addCommandAlias("fmtCheck", "all scalachess/scalafmtCheckAll bench/scalafmtCheckAll testKit/scalafmtCheckAll")
-addCommandAlias("fmt", "all scalachess/scalafmtAll bench/scalafmtAll testKit/scalafmtAll")
+lazy val root = project
+  .in(file("."))
+  .settings(publish := {}, publish / skip := true)
+  .aggregate(scalachess, playJson, testKit, bench)
+
+addCommandAlias("prepare", "scalafixAll; scalafmtAll")
+addCommandAlias("check", "; scalafixAll --check; scalafmtCheckAll")

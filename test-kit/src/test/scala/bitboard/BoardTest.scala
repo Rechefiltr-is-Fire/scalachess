@@ -1,10 +1,10 @@
 package chess
 package bitboard
 
+import chess.format.{ Fen, FullFen }
+
 import Square.*
 import Bitboard.*
-import chess.format.Fen
-import chess.format.EpdFen
 
 class BoardTest extends ChessTest:
 
@@ -12,7 +12,7 @@ class BoardTest extends ChessTest:
   given Conversion[Square, Int] = _.value
   given Conversion[Int, Square] = Square.unsafe(_)
 
-  def parseFen(fen: EpdFen): Board =
+  def parseFen(fen: FullFen): Board =
     Fen.read(fen).map(_.board.board).getOrElse(throw RuntimeException("boooo"))
 
   test("generateMovesAt(square) = generateMoves.filter(_.orig == square)"):
@@ -150,7 +150,7 @@ class BoardTest extends ChessTest:
       board = parseFen(str)
       s <- Square.all
       result = board.putOrReplace(White.king, s)
-      expected <- board.put(White.king, s) orElse board.replace(White.king, s)
+      expected <- board.put(White.king, s).orElse(board.replace(White.king, s))
     yield assertEquals(result, expected)
 
   test("pieceMap . fromMap == identity"):

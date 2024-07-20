@@ -1,6 +1,7 @@
 package chess
 
 import scala.language.implicitConversions
+
 import Square.*
 
 class RookTest extends ChessTest:
@@ -18,7 +19,7 @@ N R    P
 
 PPPPPPPP
  NBQKBNR
-""" destsFrom C4,
+""".destsFrom(C4),
       Set(C3, C5, C6, C7, B4, D4, E4, F4, G4)
     )
 
@@ -33,6 +34,6 @@ n R   p
 
 PPPPPPPP
  NBQKBNR
-""" destsFrom C4,
+""".destsFrom(C4),
       Set(C3, C5, C6, C7, B4, A4, D4, E4, F4, G4)
     )

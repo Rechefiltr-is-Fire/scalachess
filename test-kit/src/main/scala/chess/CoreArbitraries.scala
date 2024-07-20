@@ -1,11 +1,10 @@
 package chess
 
-import chess.variant.Variant
 import chess.bitboard.Bitboard
-import chess.format.{ Uci, UciCharPair }
-
-import org.scalacheck.{ Arbitrary, Cogen, Gen }
 import chess.format.pgn.{ Glyph, Glyphs }
+import chess.format.{ Uci, UciCharPair }
+import chess.variant.Variant
+import org.scalacheck.{ Arbitrary, Cogen, Gen }
 
 object CoreArbitraries:
   given Arbitrary[Color]   = Arbitrary(Gen.oneOf(Color.all))
@@ -31,15 +30,15 @@ object CoreArbitraries:
 
   given Arbitrary[Uci] = Arbitrary(Gen.oneOf(normalUciMoveGen, promotionUciMoveGen, dropUciMoveGen))
 
-  given Cogen[Color]  = Cogen(x => if x == White then 0L else 1L)
+  given Cogen[Color]  = Cogen.cogenBoolean.contramap(_.white)
   given Cogen[Square] = Cogen(_.value.toLong)
+  given Cogen[Centis] = Cogen(_.value.toLong)
 
-  given [A](using Arbitrary[A]): Arbitrary[ByColor[A]] = Arbitrary(
+  given [A](using Arbitrary[A]): Arbitrary[ByColor[A]] = Arbitrary:
     for
       w <- Arbitrary.arbitrary[A]
       b <- Arbitrary.arbitrary[A]
     yield ByColor(w, b)
-  )
 
   def normalUciMoveGen =
     for

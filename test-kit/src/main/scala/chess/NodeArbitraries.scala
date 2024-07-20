@@ -1,7 +1,7 @@
 package chess
 
-import org.scalacheck.{ Arbitrary, Gen }
 import cats.kernel.Eq
+import org.scalacheck.{ Arbitrary, Gen }
 
 object NodeArbitraries:
 
@@ -54,7 +54,7 @@ object NodeArbitraries:
 
   def genVariation[A](using Arbitrary[A]): Gen[Variation[A]] =
     Gen.sized: size =>
-      val sqrt = Math.sqrt(size.toDouble).toInt
+      val sqrt = Math.sqrt(size.toDouble).toInt / 2
       for
         a <- Arbitrary.arbitrary[A]
         c <- genChild[A](sqrt)

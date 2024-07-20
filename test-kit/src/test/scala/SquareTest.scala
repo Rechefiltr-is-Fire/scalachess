@@ -1,10 +1,11 @@
 package chess
 
 import cats.syntax.all.*
-import Square.*
 import munit.ScalaCheckSuite
-import CoreArbitraries.given
 import org.scalacheck.Prop.forAll
+
+import Square.*
+import CoreArbitraries.given
 
 class SquareTest extends ScalaCheckSuite:
 
@@ -39,12 +40,12 @@ class SquareTest extends ScalaCheckSuite:
 
   test("x onSame x == true"):
     Square.all.foreach: square =>
-      assert(square onSameLine square)
-      assert(square onSameRank square)
-      assert(square onSameDiagonal square)
+      assert(square.onSameLine(square))
+      assert(square.onSameRank(square))
+      assert(square.onSameDiagonal(square))
 
   test("x onSame y == y onSame x"):
     forAll: (x: Square, y: Square) =>
-      assertEquals(x onSameLine y, y onSameLine x)
-      assertEquals(x onSameRank y, y onSameRank x)
-      assertEquals(x onSameDiagonal y, y onSameDiagonal x)
+      assertEquals(x.onSameLine(y), y.onSameLine(x))
+      assertEquals(x.onSameRank(y), y.onSameRank(x))
+      assertEquals(x.onSameDiagonal(y), y.onSameDiagonal(x))

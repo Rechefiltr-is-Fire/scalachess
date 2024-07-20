@@ -2,8 +2,7 @@ package chess
 package format
 
 import chess.bitboard.Board as BBoard
-import chess.variant.Variant
-import chess.variant.Crazyhouse
+import chess.variant.{ Crazyhouse, Variant }
 
 /** r bqkb r
   * p ppp pp
@@ -24,10 +23,10 @@ object Visual:
       case n          => (List.fill(8 - n)("")) ::: lines
     val b = createBoard(
       pieces = (for
-        (l, y) <- (filtered zipWithIndex)
-        (c, x) <- (l zipWithIndex)
-        role   <- Role forsyth c.toLower
-      yield Square.at(x, 7 - y) map { square =>
+        (l, y) <- filtered.zipWithIndex
+        (c, x) <- l.zipWithIndex
+        role   <- Role.forsyth(c.toLower)
+      yield Square.at(x, 7 - y).map { square =>
         square -> (Color.fromWhite(c isUpper) - role)
       }) flatten,
       variant = chess.variant.Variant.default
@@ -38,16 +37,16 @@ object Visual:
 
   def >>|(board: Board, marks: Map[Iterable[Square], Char]): String = {
     val markedPoss: Map[Square, Char] = marks.foldLeft(Map[Square, Char]()) { case (marks, (poss, char)) =>
-      marks ++ (poss.toList map { square =>
+      marks ++ (poss.toList.map { square =>
         (square, char)
       })
     }
     for (y <- Rank.allReversed) yield {
       for (x <- File.all) yield
         val square = Square(x, y)
-        markedPoss.get(square) getOrElse board(square).fold(' ')(_ forsyth)
+        markedPoss.get(square).getOrElse(board(square).fold(' ')(_ forsyth))
     } mkString
-  } map { """\s*$""".r.replaceFirstIn(_, "") } mkString "\n"
+  }.map { """\s*$""".r.replaceFirstIn(_, "") }.mkString("\n")
 
   def addNewLines(str: String) = "\n" + str + "\n"
 
@@ -58,5 +57,5 @@ object Visual:
       board,
       History(castles = variant.castles, unmovedRooks = unmovedRooks),
       variant,
-      variant.crazyhouse option Crazyhouse.Data.init
+      variant.crazyhouse.option(Crazyhouse.Data.init)
     )

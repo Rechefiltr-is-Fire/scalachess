@@ -1,6 +1,7 @@
 package chess
 
 import scala.language.implicitConversions
+
 import Square.*
 
 class BoardTest extends ChessTest:
@@ -56,12 +57,16 @@ class BoardTest extends ChessTest:
     assertEquals(board.place(White - Rook, E3).get.apply(E3), Option(White - Rook))
 
   test("allow a piece to be taken"):
-    board take A1 assertSome: b =>
-      assertEquals(b(A1), None)
+    board
+      .take(A1)
+      .assertSome: b =>
+        assertEquals(b(A1), None)
 
   test("allow a piece to move"):
-    board.move(E2, E4) assertSome: b =>
-      assertEquals(b(E4), Option(White - Pawn))
+    board
+      .move(E2, E4)
+      .assertSome: b =>
+        assertEquals(b(E4), Option(White - Pawn))
 
   test("not allow an empty position to move"):
     assertEquals(board.move(E5, E6), None)

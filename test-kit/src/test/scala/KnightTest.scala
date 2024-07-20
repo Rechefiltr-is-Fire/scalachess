@@ -1,6 +1,7 @@
 package chess
 
 import scala.language.implicitConversions
+
 import Square.*
 
 class KnightTest extends ChessTest:
@@ -17,7 +18,7 @@ PPP  PPP
  NBQKBNR
 """
     assertEquals(
-      visualDests(board, board destsFrom C4),
+      visualDests(board, board.destsFrom(C4)),
       """
 k B
 
@@ -42,7 +43,7 @@ PPP  PPP
  NBQKBNR
 """
     assertEquals(
-      visualDests(board, board destsFrom C4),
+      visualDests(board, board.destsFrom(C4)),
       """
 k B
 

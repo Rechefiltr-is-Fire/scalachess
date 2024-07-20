@@ -1,28 +1,30 @@
 package chess
 
-import scala.language.implicitConversions
-import variant.Chess960
+import chess.format.FullFen
 import chess.format.pgn.Reader
-import chess.format.EpdFen
+
+import scala.language.implicitConversions
+
+import variant.Chess960
 
 class Chess960Test extends ChessTest:
 
   test("recognize position numbers"):
     import Chess960.{ positionNumber as pn }
-    assertEquals(pn(EpdFen("k7/ppP5/brp5/8/8/8/8/8 b - -")), None)
+    assertEquals(pn(FullFen("k7/ppP5/brp5/8/8/8/8/8 b - -")), None)
 
-    assertEquals(pn(EpdFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w KQkq - 0 1")), Some(521))
-    assertEquals(pn(EpdFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNBBBKNR w KQkq - 0 1")), None)
-    assertEquals(pn(EpdFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNqBBKNR w KQkq - 0 1")), None)
-    assertEquals(pn(EpdFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR b KQkq - 0 1")), None)
-    assertEquals(pn(EpdFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w Kkq - 0 1")), None)
-    assertEquals(pn(EpdFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w KQkq - 1 1")), None)
+    assertEquals(pn(FullFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w KQkq - 0 1")), Some(521))
+    assertEquals(pn(FullFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNBBBKNR w KQkq - 0 1")), None)
+    assertEquals(pn(FullFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNqBBKNR w KQkq - 0 1")), None)
+    assertEquals(pn(FullFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR b KQkq - 0 1")), None)
+    assertEquals(pn(FullFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w Kkq - 0 1")), None)
+    assertEquals(pn(FullFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w KQkq - 1 1")), None)
 
-    assertEquals(pn(EpdFen("bbqnnrkr/pppppppp/8/8/8/8/PPPPPPPP/BBQNNRKR w KQkq - 0 1")), Some(0))
-    assertEquals(pn(EpdFen("rkrnnqbb/pppppppp/8/8/8/8/PPPPPPPP/RKRNNQBB w KQkq - 0 1")), Some(959))
+    assertEquals(pn(FullFen("bbqnnrkr/pppppppp/8/8/8/8/PPPPPPPP/BBQNNRKR w KQkq - 0 1")), Some(0))
+    assertEquals(pn(FullFen("rkrnnqbb/pppppppp/8/8/8/8/PPPPPPPP/RKRNNQBB w KQkq - 0 1")), Some(959))
 
-    assertEquals(pn(EpdFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w AHa - 0 1")), None)
-    assertEquals(pn(EpdFen("bbqnnrkr/pppppppp/8/8/8/8/PPPPPPPP/BBQNNRKR w AHah - 0 1")), None)
+    assertEquals(pn(FullFen("rnqbbknr/pppppppp/8/8/8/8/PPPPPPPP/RNQBBKNR w AHa - 0 1")), None)
+    assertEquals(pn(FullFen("bbqnnrkr/pppppppp/8/8/8/8/PPPPPPPP/BBQNNRKR w AHah - 0 1")), None)
 
   test("Castles when a1 is being taken"):
     val pgn = """
